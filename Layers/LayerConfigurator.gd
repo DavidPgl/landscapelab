@@ -302,6 +302,19 @@ func load_path_layer(db, layer_config, feature_layers, raster_layers) -> Layer:
 	return path_layer
 
 
+func load_road_network_layer(db, layer_config, feature_layers, raster_layers) -> Layer:
+	var road_network_layer:  = Layer.new()
+	road_network_layer.render_type = Layer.RenderType.ROAD_NETWORK
+	road_network_layer.render_info = Layer.RoadNetworkRenderInfo.new()
+	
+	road_network_layer.render_info.road_layer = get_geolayer_name_by_type(db, "EDGE", feature_layers, false)
+	road_network_layer.render_info.intersection_layer = get_geolayer_name_by_type(db, "NODE", feature_layers, false)
+	road_network_layer.render_info.ground_height_layer = get_geolayer_name_by_type(db, "HEIGHT_LAYER", raster_layers)
+	road_network_layer.name = layer_config.name
+	
+	return road_network_layer
+
+
 # Loads a JSON containing paths to Objects in this format:
 # {"object_name_1": "res://path/to/object1.tscn", "object_name_2": "path/to/object2.tscn"}
 func load_object_JSON(json_string: String) -> Dictionary:

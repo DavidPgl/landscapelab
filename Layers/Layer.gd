@@ -25,7 +25,8 @@ enum RenderType {
 	PATH,
 	CONNECTED_OBJECT,
 	POLYGON,
-	VEGETATION
+	VEGETATION,
+	ROAD_NETWORK
 }
 var render_type = RenderType.NONE
 var render_info
@@ -138,6 +139,19 @@ class PathRenderInfo extends RenderInfo:
 	
 	func is_valid():
 		return ground_height_layer != null
+
+
+class RoadNetworkRenderInfo extends RenderInfo:
+	var road_layer: Layer
+	var intersection_layer: Layer
+	var ground_height_layer: Layer
+	
+	func get_geolayers():
+		return [road_layer, intersection_layer, ground_height_layer]
+	
+	func is_valid():
+		return ground_height_layer != null
+
 
 class ConnectedObjectInfo extends RenderInfo:
 	# The geodata-key-attribute that determines which connector/connection to use
