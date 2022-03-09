@@ -333,7 +333,6 @@ Startup="*res://Global/Startup.gd"
 logger="*res://Global/Debug/logger.gd"
 ErrorPrompt="*res://Global/Debug/ErrorPrompt.gd"
 Settings="*res://Config/Settings.gd"
-GlobalSignal="*res://Global/GlobalSignal.gd"
 CommunicationServer="*res://Communication/CommunicationServer.gd"
 ThreadPool="*res://Global/ThreadPool/ThreadPool.gd"
 GameModeLoader="*res://Global/GameModeLoader.gd"
@@ -361,7 +360,7 @@ enabled=PoolStringArray( "dscn_io", "gameflow" )
 
 [gdnative]
 
-singletons=[ "res://addons/godot-openvr/godot_openvr.gdnlib" ]
+singletons=[ "res://addons/godot-openvr/godot_openvr.gdnlib", "res://pythonscript.gdnlib" ]
 
 [gui]
 
