@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://Objects/RoadNetwork/RoadInstance.gd" type="Script" id=1]
 
@@ -8,8 +8,15 @@ _data = {
 "tilts": PoolRealArray( 0, 0, 0, 0 )
 }
 
+[sub_resource type="Gradient" id=3]
+offsets = PoolRealArray( 0.141414, 0.501683, 0.885522 )
+colors = PoolColorArray( 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1 )
+
+[sub_resource type="GradientTexture" id=4]
+gradient = SubResource( 3 )
+
 [sub_resource type="SpatialMaterial" id=2]
-albedo_color = Color( 0.258824, 0.258824, 0.258824, 1 )
+albedo_texture = SubResource( 4 )
 
 [node name="RoadInstance" type="Path"]
 curve = SubResource( 1 )
@@ -24,7 +31,7 @@ path_interval = 1.0
 path_simplify_angle = 0.0
 path_rotation = 2
 path_local = false
-path_continuous_u = true
+path_continuous_u = false
 path_u_distance = 1.0
 path_joined = false
 material = SubResource( 2 )
