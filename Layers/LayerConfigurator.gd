@@ -59,8 +59,8 @@ func digest_geopackage():
 	db.open_db()
 	
 	# Load vegetation tables outside of the GPKG
-	logger.info("Loading Vegetation tables from GPKG ...", LOG_MODULE)
-	Vegetation.load_data_from_gpkg(db)
+	#logger.info("Loading Vegetation tables from GPKG ...", LOG_MODULE)
+	#Vegetation.load_data_from_gpkg(db)
 	
 	# Load configuration for each layer as specified in GPKG
 	logger.info("Starting to load layers ...", LOG_MODULE)
@@ -394,14 +394,17 @@ func load_path_layer(db, layer_config, geo_layers_config) -> Layer:
 	return path_layer
 
 
-func load_road_network_layer(db, layer_config, feature_layers, raster_layers) -> Layer:
+func load_road_network_layer(db, layer_config, geo_layers_config) -> Layer:
 	var road_network_layer:  = Layer.new()
 	road_network_layer.render_type = Layer.RenderType.ROAD_NETWORK
 	road_network_layer.render_info = Layer.RoadNetworkRenderInfo.new()
 	
-	road_network_layer.render_info.road_layer = get_geolayer_name_by_type(db, "EDGE", feature_layers, false)
-	road_network_layer.render_info.intersection_layer = get_geolayer_name_by_type(db, "NODE", feature_layers, false)
-	road_network_layer.render_info.ground_height_layer = get_geolayer_name_by_type(db, "HEIGHT_LAYER", raster_layers)
+	road_network_layer.render_info.road_layer = get_geofeaturelayer_by_name(db, "road_edges", geo_layers_config.features)
+	road_network_layer.render_info.intersection_layer = get_geofeaturelayer_by_name(db, "road_nodes", geo_layers_config.features)
+	road_network_layer.render_info.ground_height_layer = get_georasterlayer_by_type(db, "HEIGHT_LAYER", geo_layers_config.rasters)
+	road_network_layer.render_info.road_instance_scene = load(get_extension_by_key(db, "road_instance", layer_config.id))
+	road_network_layer.render_info.intersection_instance_scene = load(get_extension_by_key(db, "intersection_instance", layer_config.id))
+	
 	road_network_layer.name = layer_config.name
 	
 	return road_network_layer

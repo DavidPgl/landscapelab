@@ -174,6 +174,16 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Layers/RasterLayer.gd"
 }, {
+"base": "Path",
+"class": "RoadInstance",
+"language": "GDScript",
+"path": "res://Objects/RoadNetwork/RoadInstance.gd"
+}, {
+"base": "LayerRenderer",
+"class": "RoadNetworkRenderer",
+"language": "GDScript",
+"path": "res://Layers/Renderers/RoadNetwork/RoadNetworkRenderer.gd"
+}, {
 "base": "Node",
 "class": "Scenario",
 "language": "GDScript",
@@ -298,6 +308,8 @@ _global_script_class_icons={
 "Profile": "",
 "Python": "",
 "RasterLayer": "",
+"RoadInstance": "",
+"RoadNetworkRenderer": "",
 "Scenario": "",
 "Score": "",
 "SetObjectPositionRequestHandler": "",
@@ -360,7 +372,7 @@ enabled=PoolStringArray( "dscn_io", "gameflow" )
 
 [gdnative]
 
-singletons=[ "res://addons/godot-openvr/godot_openvr.gdnlib", "res://pythonscript.gdnlib" ]
+singletons=[ "res://addons/godot-openvr/godot_openvr.gdnlib" ]
 
 [gui]
 

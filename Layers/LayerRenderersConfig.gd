@@ -8,7 +8,8 @@ var renderers = {
 	Layer.RenderType.VEGETATION: preload("res://Layers/Renderers/RasterVegetation/RasterVegetationRenderer.tscn"),
 	Layer.RenderType.OBJECT: preload("res://Layers/Renderers/Objects/ObjectRenderer.tscn"),
 	Layer.RenderType.PATH: preload("res://Layers/Renderers/Path/PathRenderer.tscn"),
-	Layer.RenderType.CONNECTED_OBJECT: preload("res://Layers/Renderers/ConnectedObjects/ConnectedObjectRenderer.tscn")
+	Layer.RenderType.CONNECTED_OBJECT: preload("res://Layers/Renderers/ConnectedObjects/ConnectedObjectRenderer.tscn"),
+	Layer.RenderType.ROAD_NETWORK: preload("res://Layers/Renderers/RoadNetwork/RoadNetworkRenderer.tscn")
 }
 
 

@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=2]
+
+[ext_resource path="res://Objects/RoadNetwork/RoadInstance.gd" type="Script" id=1]
+
+[sub_resource type="Curve3D" id=1]
+_data = {
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.171115, -0.247567, 1.01639, 0, 0, 0, 0, 0, 0, -0.355516, -0.492177, 2.0506, 0, 0, 0, 0, 0, 0, -0.552617, -0.782392, 3.23526, 0, 0, 0, 0, 0, 0, -0.776313, -1.10578, 4.56326 ),
+"tilts": PoolRealArray( 0, 0, 0, 0 )
+}
+
+[sub_resource type="SpatialMaterial" id=2]
+albedo_color = Color( 0.258824, 0.258824, 0.258824, 1 )
+
+[node name="RoadInstance" type="Path"]
+curve = SubResource( 1 )
+script = ExtResource( 1 )
+
+[node name="RoadPolygon" type="CSGPolygon" parent="."]
+polygon = PoolVector2Array( -0.5, 0, 0.5, 0, 0.5, 0.2, -0.5, 0.2 )
+mode = 2
+path_node = NodePath("..")
+path_interval_type = 0
+path_interval = 1.0
+path_simplify_angle = 0.0
+path_rotation = 2
+path_local = false
+path_continuous_u = true
+path_u_distance = 1.0
+path_joined = false
+material = SubResource( 2 )
