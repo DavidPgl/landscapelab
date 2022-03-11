@@ -1,22 +1,15 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=4 format=2]
 
 [ext_resource path="res://Objects/RoadNetwork/RoadInstance.gd" type="Script" id=1]
 
 [sub_resource type="Curve3D" id=1]
 _data = {
-"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.171115, -0.247567, 1.01639, 0, 0, 0, 0, 0, 0, -0.355516, -0.492177, 2.0506, 0, 0, 0, 0, 0, 0, -0.552617, -0.782392, 3.23526, 0, 0, 0, 0, 0, 0, -0.776313, -1.10578, 4.56326 ),
-"tilts": PoolRealArray( 0, 0, 0, 0 )
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.171115, -0.247567, 1.01639, 0, 0, 0, 0, 0, 0, -0.355516, -0.492177, 2.0506, 0, 0, 0, 0, 0, 0, -1.93859, -0.0993137, 4.23087 ),
+"tilts": PoolRealArray( 0, 0, 0 )
 }
 
-[sub_resource type="Gradient" id=3]
-offsets = PoolRealArray( 0.141414, 0.501683, 0.885522 )
-colors = PoolColorArray( 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1 )
-
-[sub_resource type="GradientTexture" id=4]
-gradient = SubResource( 3 )
-
-[sub_resource type="SpatialMaterial" id=2]
-albedo_texture = SubResource( 4 )
+[sub_resource type="SpatialMaterial" id=4]
+albedo_color = Color( 1, 0, 0, 1 )
 
 [node name="RoadInstance" type="Path"]
 curve = SubResource( 1 )
@@ -34,4 +27,4 @@ path_local = false
 path_continuous_u = false
 path_u_distance = 1.0
 path_joined = false
-material = SubResource( 2 )
+material = SubResource( 4 )
