@@ -85,8 +85,11 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# Direction of curve edge
 			var direction = next_point - current_point
 			
+			var non_parallel = direction.x != 0
+			var intersects = abs((next_point.x / heightmap_sample_rate) - (current_point.x / heightmap_sample_rate)) >= 1
+			
 			# Only calculate grid point if we don't have one and there actually is one
-			if x_grid_point == null && abs((next_point.x / heightmap_sample_rate) - (current_point.x / heightmap_sample_rate)) >= 1:
+			if x_grid_point == null && non_parallel && intersects:
 				
 				# Calculate x sampling grid offset
 				var x_offset
@@ -106,8 +109,11 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				x_grid_point = Vector3(current_point.x + x_offset, 0, current_point.z + z)
 				x_grid_point = Vector3(x_grid_point.x, _get_height_at_ground(x_grid_point), x_grid_point.z)
 			
+			non_parallel = direction.z != 0
+			intersects = abs((next_point.z / heightmap_sample_rate) - (current_point.z / heightmap_sample_rate)) >= 1
+			
 			# Only calculate grid point if we don't have one and there actually is one
-			if z_grid_point == null && abs((next_point.z / heightmap_sample_rate) - (current_point.z / heightmap_sample_rate)) >= 1:
+			if z_grid_point == null && non_parallel && intersects:
 				
 				# Calculate sampling grid z offset
 				var z_offset
