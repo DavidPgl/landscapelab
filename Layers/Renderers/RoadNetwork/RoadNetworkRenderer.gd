@@ -23,7 +23,7 @@ var intersections = []
 
 const heightmap_size: int = 500
 const heightmap_resolution: int = 100
-const heightmap_sample_rate: int = heightmap_size / heightmap_resolution
+const sample_rate: int = heightmap_size / heightmap_resolution
 
 
 # OVERRIDE #
@@ -60,11 +60,30 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	var road_instance = road_instance_scene.instance()
 	# Set road curve
 	var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
-	
-	# Apply terrain height to roads
-	for index in range(road_curve.get_point_count()):
+
+	# TODO: Maybe move this into main iteration loop
+	# Get height for road points with triangular interpolation
+	for index in range(1, road_curve.get_point_count() - 1, 1):
 		var point = road_curve.get_point_position(index)
-		point = Vector3(point.x, _get_height_at_ground(point), point.z)
+		
+		var x_grid = floor(point.x / sample_rate)
+		var z_grid = floor(point.z / sample_rate)
+
+		var A = Vector3(x_grid * sample_rate, 0, z_grid * sample_rate)
+
+		var bx = x_grid
+		var bz = z_grid
+		var in_lower_triangle: bool = fmod(point.x, sample_rate) + fmod(point.z, sample_rate) <= sample_rate
+		if not in_lower_triangle:
+			bx += 1
+			bz += 1
+
+		var B = Vector3(bx * sample_rate, 0, bz * sample_rate)
+		var C = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
+		
+		var weights = _triangularInterpolation(point, A, B, C)
+		
+		point.y = A.y * weights.x + B.y * weights.y + C.y * weights.z
 		road_curve.set_point_position(index, point)
 	
 	
@@ -82,56 +101,77 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		
 		var next_point_index = current_point_index + 1
 		while current_point_index < next_point_index:
+			
+			var x_grid = floor(current_point.x / sample_rate)
+			var z_grid = floor(current_point.z / sample_rate)
+			
+			# TODO: Limit A, B, C calculation
+			# INTERSECTION WITH DIAGONAL
+			
+			var A = Vector3(x_grid * sample_rate, 0, z_grid * sample_rate)
+			
+			var bx = x_grid
+			var bz = z_grid
+			# Choose B depending on current_points position in quad
+			var in_lower_triangle: bool = fmod(current_point.x, sample_rate) + fmod(current_point.z, sample_rate) <= sample_rate
+			if not in_lower_triangle:
+				bx += 1
+				bz += 1
+			
+			var B = Vector3(bx * sample_rate, 0, bz * sample_rate)
+			var C = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
+			
+			# Calculate intersection values
+			var den = (current_point.x - next_point.x) * (C.z - A.z) - (current_point.z - next_point.z) * (C.x - A.x)
+			var t = ((current_point.x - C.x) * (C.z - A.z) - (current_point.z - C.z) * (C.x - A.x)) / den
+			var u = ((current_point.x - next_point.x) * (current_point.z - C.z) - (current_point.z - next_point.z) * (current_point.x - C.x)) / den
+			
+			# Only continue if intersection is with the line
+			if t >= 0 && t <= 1 && u >= 0 && u <= 1:
+				var I = Vector3(
+					current_point.x + t * (next_point.x - current_point.x),
+					0,
+					current_point.z + t * (next_point.z - current_point.z))
+				
+				# Calculate vectors for projection without z
+				var CI = I - C
+				var CA = A - C
+				
+				# Calculate intersection point with z
+				_move_to_ground_height(A)
+				_move_to_ground_height(B)
+				_move_to_ground_height(C)
+				
+				var intersection_point = (CI.length() / CA.length()) * (A - C) + C
+				
+				# Add intersection to curve
+				road_curve.add_point(intersection_point, Vector3(), Vector3(), current_point_index + 1)
+				current_point_index += 1
+				next_point_index += 1
+			
+			
+			
+			
+			# INTERSECTION WITH GRID AXIS
+			
 			# Direction of curve edge
 			var direction = next_point - current_point
 			
-			var non_parallel = direction.x != 0
-			var intersects = abs((next_point.x / heightmap_sample_rate) - (current_point.x / heightmap_sample_rate)) >= 1
+			# Only calculate grid point if we don't have one from last calculation
+			if x_grid_point == null:
+				var x_offset = _get_grid_offset(current_point.x, next_point.x)
+				if x_offset != 0.0:
+					var z = direction.z / direction.x * x_offset
+					x_grid_point = Vector3(current_point.x + x_offset, 0, current_point.z + z)
+					_move_to_ground_height(x_grid_point)
 			
-			# Only calculate grid point if we don't have one and there actually is one
-			if x_grid_point == null && non_parallel && intersects:
-				
-				# Calculate x sampling grid offset
-				var x_offset
-
-				# If the direction is positive, go to the next grid on the right
-				if sign(direction.x) == 1:
-					x_offset = (heightmap_sample_rate - fmod(abs(current_point.x), heightmap_sample_rate))
-				# If the direction is negative, go to the next grid on the left
-				else:
-					x_offset = (fmod(abs(current_point.x), heightmap_sample_rate)) * -1 
-				
-				# Going from one x grid point to the next
-				if x_offset == 0:
-					x_offset += heightmap_sample_rate * sign(direction.x)
-				
-				var z = direction.z / direction.x * x_offset
-				x_grid_point = Vector3(current_point.x + x_offset, 0, current_point.z + z)
-				x_grid_point = Vector3(x_grid_point.x, _get_height_at_ground(x_grid_point), x_grid_point.z)
+			if z_grid_point == null :
+				var z_offset = _get_grid_offset(current_point.z, next_point.z)
+				if z_offset != 0.0:
+					var x = direction.x / direction.z * z_offset
+					z_grid_point = Vector3(current_point.x + x, 0, current_point.z + z_offset)
+					_move_to_ground_height(z_grid_point)
 			
-			non_parallel = direction.z != 0
-			intersects = abs((next_point.z / heightmap_sample_rate) - (current_point.z / heightmap_sample_rate)) >= 1
-			
-			# Only calculate grid point if we don't have one and there actually is one
-			if z_grid_point == null && non_parallel && intersects:
-				
-				# Calculate sampling grid z offset
-				var z_offset
-
-				# If the direction is positive, go to the next grid on the right
-				if sign(direction.z) == 1:
-					z_offset = (heightmap_sample_rate - fmod(abs(current_point.z), heightmap_sample_rate))
-				# If the direction is negative, go to the next grid on the left
-				else:
-					z_offset = (fmod(abs(current_point.z), heightmap_sample_rate)) * -1
-				
-				# Going from one z grid point to the next
-				if z_offset == 0:
-					z_offset += heightmap_sample_rate * sign(direction.z)
-				
-				var x = direction.x / direction.z * z_offset
-				z_grid_point = Vector3(current_point.x + x, 0, current_point.z + z_offset)
-				z_grid_point = Vector3(z_grid_point.x, _get_height_at_ground(z_grid_point), z_grid_point.z)
 			
 			# If no grid points, done with this curve edge
 			if x_grid_point == null && z_grid_point == null:
@@ -171,11 +211,45 @@ func _get_height_at_ground(position: Vector3):
 		center[0] + position.x, center[1] - position.z)
 
 
+func _move_to_ground_height(vector :Vector3) -> void:
+	vector.y = layer.render_info.ground_height_layer.get_value_at_position(
+		center[0] + vector.x, center[1] - vector.z)
 
-func customCompare(a: Vector3, b: Vector3):
-	return a.length_squared() < b.length_squared()
+
+func _get_grid_offset(from: float, to: float) -> float:
+	var direction: float = to - from
+	
+	var non_parallel: bool = direction != 0
+	var intersects: bool = abs((to / sample_rate) - (from / sample_rate)) >= 1
+	
+	# Only calculate grid point if we don't have one and there actually is one
+	if non_parallel && intersects:
+		
+		# Calculate sampling grid offset
+		var offset
+
+		# If the direction is positive, go to the next grid on the right
+		if sign(direction) == 1:
+			offset = (sample_rate - fmod(abs(from), sample_rate))
+		# If the direction is negative, go to the next grid on the left
+		else:
+			offset = (fmod(abs(from), sample_rate)) * -1
+		
+		# Going from one x grid point to the next
+		if offset == 0:
+			offset += sample_rate * sign(direction)
+		
+		return offset
+	else:
+		return 0.0
 
 
+func _triangularInterpolation(P, A, B, C) -> Vector3:
+	var W1 = ((B.z - C.z) * (P.x - C.x) + (C.x - B.x) * (P.z - C.z)) / ((B.z - C.z) * (A.x - C.x) + (C.x - B.x) * (A.z - C.z))
+	var W2 = ((C.z - A.z) * (P.x - C.x) + (A.x - C.x) * (P.z - C.z)) / ((B.z - C.z) * (A.x - C.x) + (C.x - B.x) * (A.z - C.z))
+	var W3 = 1 - W1 - W2
+	
+	return Vector3(W1, W2, W3)
 
 
 
