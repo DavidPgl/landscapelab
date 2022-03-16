@@ -63,7 +63,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 
 	# TODO: Maybe move this into main iteration loop
 	# Get height for road points with triangular interpolation
-	for index in range(1, road_curve.get_point_count() - 1, 1):
+	for index in range(road_curve.get_point_count(), 1):
 		var point = road_curve.get_point_position(index)
 		
 		var x_grid = floor(point.x / sample_rate)
