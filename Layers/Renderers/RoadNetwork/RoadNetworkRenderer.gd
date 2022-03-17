@@ -21,8 +21,8 @@ var roads = {}
 var intersections = []
 
 
-const heightmap_size: int = 500
-const heightmap_resolution: int = 100
+const heightmap_size: int = 31250
+const heightmap_resolution: int = 500
 const sample_rate: int = heightmap_size / heightmap_resolution
 
 
@@ -73,15 +73,21 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 
 		var bx = x_grid
 		var bz = z_grid
+		# Choose B depending on current_points position in quad
 		var in_lower_triangle: bool = fmod(point.x, sample_rate) + fmod(point.z, sample_rate) <= sample_rate
-		if not in_lower_triangle:
+		if in_lower_triangle:
 			bx += 1
+		else:
 			bz += 1
 
 		var B = Vector3(bx * sample_rate, 0, bz * sample_rate)
-		var C = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
+		var C = Vector3((x_grid + 1) * sample_rate, 0, (z_grid + 1) * sample_rate)
 		
 		var weights = _triangularInterpolation(point, A, B, C)
+		
+		A = _move_to_ground_height(A)
+		B = _move_to_ground_height(B)
+		C = _move_to_ground_height(C)
 		
 		point.y = A.y * weights.x + B.y * weights.y + C.y * weights.z
 		road_curve.set_point_position(index, point)
@@ -109,17 +115,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# INTERSECTION WITH DIAGONAL
 			
 			var A = Vector3(x_grid * sample_rate, 0, z_grid * sample_rate)
-			
-			var bx = x_grid
-			var bz = z_grid
-			# Choose B depending on current_points position in quad
-			var in_lower_triangle: bool = fmod(current_point.x, sample_rate) + fmod(current_point.z, sample_rate) <= sample_rate
-			if not in_lower_triangle:
-				bx += 1
-				bz += 1
-			
-			var B = Vector3(bx * sample_rate, 0, bz * sample_rate)
-			var C = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
+			var C = Vector3((x_grid + 1) * sample_rate, 0, (z_grid + 1) * sample_rate)
 			
 			# Calculate intersection values
 			var den = (current_point.x - next_point.x) * (C.z - A.z) - (current_point.z - next_point.z) * (C.x - A.x)
@@ -138,9 +134,8 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				var CA = A - C
 				
 				# Calculate intersection point with z
-				_move_to_ground_height(A)
-				_move_to_ground_height(B)
-				_move_to_ground_height(C)
+				A = _move_to_ground_height(A)
+				C = _move_to_ground_height(C)
 				
 				var intersection_point = (CI.length() / CA.length()) * (A - C) + C
 				
@@ -149,10 +144,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				current_point_index += 1
 				next_point_index += 1
 			
-			
-			
-			
-			# INTERSECTION WITH GRID AXIS
+			# INTERSECTION WITH GRID AXES
 			
 			# Direction of curve edge
 			var direction = next_point - current_point
@@ -163,14 +155,14 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				if x_offset != 0.0:
 					var z = direction.z / direction.x * x_offset
 					x_grid_point = Vector3(current_point.x + x_offset, 0, current_point.z + z)
-					_move_to_ground_height(x_grid_point)
+					x_grid_point = _move_to_ground_height(x_grid_point)
 			
 			if z_grid_point == null :
 				var z_offset = _get_grid_offset(current_point.z, next_point.z)
 				if z_offset != 0.0:
 					var x = direction.x / direction.z * z_offset
 					z_grid_point = Vector3(current_point.x + x, 0, current_point.z + z_offset)
-					_move_to_ground_height(z_grid_point)
+					z_grid_point = _move_to_ground_height(z_grid_point)
 			
 			
 			# If no grid points, done with this curve edge
@@ -211,9 +203,8 @@ func _get_height_at_ground(position: Vector3):
 		center[0] + position.x, center[1] - position.z)
 
 
-func _move_to_ground_height(vector :Vector3) -> void:
-	vector.y = layer.render_info.ground_height_layer.get_value_at_position(
-		center[0] + vector.x, center[1] - vector.z)
+func _move_to_ground_height(vector :Vector3) -> Vector3:
+	return Vector3(vector.x, layer.render_info.ground_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z), vector.z)
 
 
 func _get_grid_offset(from: float, to: float) -> float:
