@@ -198,14 +198,10 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	roads[road_id] = road_instance
 
 
-# Returns the current ground height
-func _get_height_at_ground(position: Vector3):
-	return layer.render_info.ground_height_layer.get_value_at_position(
-		center[0] + position.x, center[1] - position.z)
-
-
 func _move_to_ground_height(vector :Vector3) -> Vector3:
-	return Vector3(vector.x, layer.render_info.ground_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z), vector.z)
+	var ground_height: float = layer.render_info.ground_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z)
+	var surface_height: float = layer.render_info.surface_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z)
+	return Vector3(vector.x, ground_height, vector.z)
 
 
 func _get_grid_offset(from: float, to: float) -> float:
