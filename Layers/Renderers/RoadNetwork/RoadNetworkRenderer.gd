@@ -62,8 +62,8 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
 
 	# TODO: Maybe move this into main iteration loop
-	# Get height for road points with triangular interpolation
-	for index in range(road_curve.get_point_count(), 1):
+	# Set initial road point heights
+	for index in range(road_curve.get_point_count()):
 		var point = road_curve.get_point_position(index)
 		
 		var x_grid = floor(point.x / sample_rate)
@@ -83,11 +83,12 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		var B = Vector3(bx * sample_rate, 0, bz * sample_rate)
 		var C = Vector3((x_grid + 1) * sample_rate, 0, (z_grid + 1) * sample_rate)
 		
-		var weights = _triangularInterpolation(point, A, B, C)
-		
 		A = _move_to_ground_height(A)
 		B = _move_to_ground_height(B)
 		C = _move_to_ground_height(C)
+		
+		# Get height for road points with triangular interpolation
+		var weights = _triangularInterpolation(point, A, B, C)
 		
 		point.y = A.y * weights.x + B.y * weights.y + C.y * weights.z
 		road_curve.set_point_position(index, point)
@@ -133,7 +134,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				var CI = I - C
 				var CA = A - C
 				
-				# Calculate intersection point with z
+				# Calculate actual intersection point with z
 				A = _move_to_ground_height(A)
 				C = _move_to_ground_height(C)
 				
