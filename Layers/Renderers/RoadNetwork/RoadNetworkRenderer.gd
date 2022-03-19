@@ -13,7 +13,7 @@ class_name RoadNetworkRenderer
 # direction			- 2 both, 1 edge direction, 0 opposite to edge direction, -1 unknown
 
 
-var radius = 100000
+var radius = Vegetation.get_max_extent()
 var max_features = 1000
 
 # Road id to road instance
@@ -21,9 +21,9 @@ var roads = {}
 var intersections = []
 
 
-const heightmap_size: int = 31250
-const heightmap_resolution: int = 500
-const sample_rate: int = heightmap_size / heightmap_resolution
+const heightmap_size: float = 50.0
+const heightmap_resolution: float = 100.0
+const sample_rate: float = heightmap_size / heightmap_resolution
 
 
 # OVERRIDE #
@@ -200,7 +200,6 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 
 func _move_to_ground_height(vector :Vector3) -> Vector3:
 	var ground_height: float = layer.render_info.ground_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z)
-	var surface_height: float = layer.render_info.surface_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z)
 	return Vector3(vector.x, ground_height, vector.z)
 
 
