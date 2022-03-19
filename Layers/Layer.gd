@@ -145,16 +145,15 @@ class RoadNetworkRenderInfo extends RenderInfo:
 	var road_layer: Layer
 	var intersection_layer: Layer
 	var ground_height_layer: Layer
-	var surface_height_layer: Layer
 	
 	var road_instance_scene: PackedScene
 	var intersection_instance_scene: PackedScene
 	
 	func get_geolayers():
-		return [ground_height_layer, surface_height_layer]
+		return [ground_height_layer]
 	
 	func is_valid():
-		return ground_height_layer && surface_height_layer
+		return ground_height_layer != null
 
 
 class ConnectedObjectInfo extends RenderInfo:

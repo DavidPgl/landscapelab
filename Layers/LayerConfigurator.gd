@@ -402,7 +402,6 @@ func load_road_network_layer(db, layer_config, geo_layers_config) -> Layer:
 	road_network_layer.render_info.road_layer = get_geofeaturelayer_by_name(db, "road_edges", geo_layers_config.features)
 	road_network_layer.render_info.intersection_layer = get_geofeaturelayer_by_name(db, "road_nodes", geo_layers_config.features)
 	road_network_layer.render_info.ground_height_layer = get_georasterlayer_by_type(db, "HEIGHT_LAYER", geo_layers_config.rasters)
-	road_network_layer.render_info.surface_height_layer = get_georasterlayer_by_type(db, "SURFACE_HEIGHT_LAYER", geo_layers_config.rasters)
 	road_network_layer.render_info.road_instance_scene = load(get_extension_by_key(db, "road_instance", layer_config.id))
 	road_network_layer.render_info.intersection_instance_scene = load(get_extension_by_key(db, "intersection_instance", layer_config.id))
 	
