@@ -1,11 +1,15 @@
-[gd_scene load_steps=8 format=2]
+[gd_scene load_steps=11 format=2]
 
 [ext_resource path="res://Layers/Renderers/RoadNetwork/RoadNetworkRenderer.gd" type="Script" id=1]
 [ext_resource path="res://Layers/Renderers/Terrain/lod_mesh_full_wireframe.obj" type="ArrayMesh" id=2]
 [ext_resource path="res://Layers/Renderers/Terrain/TerrainLOD.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Layers/Renderers/Terrain/Materials/TerrainShader.shader" type="Shader" id=4]
 
 [sub_resource type="CubeMesh" id=1]
 size = Vector3( 0.05, 0.05, 0.05 )
+
+[sub_resource type="SpatialMaterial" id=6]
+albedo_color = Color( 1, 0, 1, 1 )
 
 [sub_resource type="SpatialMaterial" id=2]
 albedo_color = Color( 1, 1, 0, 1 )
@@ -16,9 +20,29 @@ albedo_color = Color( 0, 1, 0, 1 )
 [sub_resource type="SpatialMaterial" id=4]
 albedo_color = Color( 0, 0, 1, 1 )
 
+[sub_resource type="ShaderMaterial" id=5]
+resource_local_to_scene = true
+shader = ExtResource( 4 )
+shader_param/height_scale = 1.0
+shader_param/has_surface_heights = false
+shader_param/surface_heights_start_distance = 800.0
+shader_param/has_landuse = false
+shader_param/distance_tex_switch_distance = 20.0
+shader_param/fade_transition_space = 8.0
+shader_param/ortho_switch_distance = 150.0
+shader_param/ortho_transition_space = 20.0
+shader_param/normal_scale = 1.0
+shader_param/ortho_saturation = 1.0
+shader_param/ortho_blue_shift_factor = 0.9
+shader_param/size = null
+
 [node name="RoadNetworkRenderer" type="Spatial"]
 script = ExtResource( 1 )
 debug_draw = true
+
+[node name="Debug_Point_Start" type="MeshInstance" parent="."]
+mesh = SubResource( 1 )
+material/0 = SubResource( 6 )
 
 [node name="Debug_Point" type="MeshInstance" parent="."]
 mesh = SubResource( 1 )
@@ -36,6 +60,7 @@ material/0 = SubResource( 4 )
 [node name="Debug" type="Node" parent="."]
 
 [node name="TerrainLOD0" parent="." instance=ExtResource( 3 )]
+material_override = SubResource( 5 )
 inner_mesh = ExtResource( 2 )
 is_inner = true
 size = 200.0

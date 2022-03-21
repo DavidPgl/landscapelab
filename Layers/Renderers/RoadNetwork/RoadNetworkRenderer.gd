@@ -20,7 +20,6 @@ var max_features = 10000
 
 # Road id to road instance
 var roads = {}
-var intersections = []
 var debug_points = []
 
 
@@ -49,7 +48,7 @@ func load_new_data():
 	debug_points.clear()
 	var i = 0
 	for road in road_features:
-		if i <= 10:
+		if i == 4:
 			_create_road(road, road_network_info.road_instance_scene)
 		i += 1
 
@@ -68,17 +67,10 @@ func apply_new_data():
 	for child in $Roads.get_children():
 		child.queue_free()
 	
-	# Remove old objects
-	for child in $Intersections.get_children():
-		child.queue_free()
-	
 	# Add new objects
 	for rode in roads.values():
 		$Roads.add_child(rode)
 		rode.apply_attributes()
-	
-	for intersection in intersections:
-		$Intersections.add_child(intersection)
 
 
 
@@ -123,7 +115,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		road_curve.set_point_position(index, point)
 		
 		if debug_draw:
-			var debug_point: MeshInstance = $Debug_Point.duplicate()
+			var debug_point: MeshInstance = $Debug_Point.duplicate() if index > 0 else $Debug_Point_Start.duplicate()
 			debug_point.transform.origin = point
 			debug_points.append(debug_point)
 	
@@ -185,7 +177,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				var intersection_point = (CI.length() / CA.length()) * (A - C) + C
 				
 				# Add intersection to curve
-				road_curve.add_point(intersection_point, Vector3(), Vector3(), current_point_index + 1)
+				road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				current_point_index += 1
 				
 				if debug_draw:
@@ -198,32 +190,36 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# Only calculate grid point if we don't have one from last calculation
 			if x_grid_point == null:
 				var non_parallel: bool = direction.x != 0
-				# Negative direction on grid edge case
 				var intersections: float = abs(floor(next_point.x / sample_rate) - floor(current_point.x / sample_rate))
-				
+				# Negative direction on grid edge case
 				if is_reverse_grid_x:
 					intersections -= 1
 				
 				if non_parallel && intersections >= 1:
 					# Calculate sampling grid offset
-					var offset
-					# If the direction is positive, go to the next grid on the right
-					if sign(direction.x) == 1:
-						offset = (sample_rate - fmod(current_point.x, sample_rate))
-					# If the direction is negative, go to the next grid on the left
-					else:
-						offset = (fmod(current_point.x, sample_rate)) * -1
+					var offset: float = 0.0
 					
-					# Going from one grid point to the next
-					if offset == 0:
-						offset += sample_rate * sign(direction.x)
+					# Go directly to other side of grid
+					if is_reverse_grid_z:
+						offset += sample_rate * sign(direction.z)
+					else:
+						# If the direction is positive, go to the next grid on the right
+						if direction.x > 0:
+							offset = (sample_rate - fmod(current_point.x, sample_rate))
+						# If the direction is negative, go to the next grid on the left
+						else:
+							offset = (fmod(current_point.x, sample_rate)) * -1
+						
+						# Going from one grid point to the next
+						if offset == 0.0:
+							offset += sample_rate * sign(direction.x)
 						
 					var z = direction.z / direction.x * offset
 					x_grid_point = Vector3(current_point.x + offset, 0, current_point.z + z)
 					x_grid_point = _move_to_ground_height(x_grid_point)
 			
 			# Same for z
-			if z_grid_point == null :
+			if z_grid_point == null:
 				var non_parallel: bool = direction.z != 0
 				var intersections: int = abs(floor(next_point.z / sample_rate) - floor(current_point.z / sample_rate))
 				
@@ -231,14 +227,18 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 					intersections -= 1
 				
 				if non_parallel && intersections >= 1:
-					var offset
-					if sign(direction.z) == 1:
-						offset = (sample_rate - fmod(current_point.z, sample_rate))
-					else:
-						offset = (fmod(current_point.z, sample_rate)) * -1
+					var offset: float = 0.0
 					
-					if offset == 0:
+					if is_reverse_grid_z:
 						offset += sample_rate * sign(direction.z)
+					else:
+						if direction.z > 0:
+							offset = (sample_rate - fmod(current_point.z, sample_rate))
+						else:
+							offset = (fmod(current_point.z, sample_rate)) * -1
+						
+						if offset == 0.0:
+							offset += sample_rate * sign(direction.z)
 					
 					var x = direction.x / direction.z * offset
 					z_grid_point = Vector3(current_point.x + x, 0, current_point.z + offset)
@@ -247,15 +247,17 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			
 			# If no grid points, done with this curve edge
 			if x_grid_point == null && z_grid_point == null:
+				# Move to next points
+				current_point_index += 1
 				break
 			
 			# Add closest one
 			if z_grid_point == null || x_grid_point != null && current_point.distance_squared_to(x_grid_point) <= current_point.distance_squared_to(z_grid_point):
-				road_curve.add_point(x_grid_point, Vector3(), Vector3(), current_point_index + 1)
+				road_curve.add_point(x_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				current_point = x_grid_point
 				x_grid_point = null
 			else:
-				road_curve.add_point(z_grid_point, Vector3(), Vector3(), current_point_index + 1)
+				road_curve.add_point(z_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				current_point = z_grid_point
 				z_grid_point = null
 			
@@ -266,12 +268,6 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				var debug_point: MeshInstance = $Debug_Point_Grid.duplicate()
 				debug_point.transform.origin = current_point
 				debug_points.append(debug_point)
-		
-		# Required to start from correct next point (while loop stops before)
-		current_point_index += 1
-	
-	# TODO: Handle terrain LOD change
-	
 	
 	road_instance.curve = road_curve
 	road_instance.width = road_width
@@ -284,35 +280,6 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 func _move_to_ground_height(vector :Vector3) -> Vector3:
 	var ground_height: float = layer.render_info.ground_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z)
 	return Vector3(vector.x, ground_height, vector.z)
-
-
-func _get_grid_offset(from: float, to: float) -> float:
-	var direction: float = to - from
-	
-	var non_parallel: bool = direction != 0
-	# Negative direction edge case
-	var intersects: bool = abs(floor(to / sample_rate) - floor(from / sample_rate)) >= 1 if direction >= 0 else 2
-	
-	# Only calculate grid point if we don't have one and there actually is one
-	if non_parallel && intersects:
-		
-		# Calculate sampling grid offset
-		var offset
-
-		# If the direction is positive, go to the next grid on the right
-		if sign(direction) == 1:
-			offset = (sample_rate - fmod(from, sample_rate))
-		# If the direction is negative, go to the next grid on the left
-		else:
-			offset = (fmod(from, sample_rate)) * -1
-		
-		# Going from one grid point to the next
-		if offset == 0:
-			offset += sample_rate * sign(direction)
-		
-		return offset
-	else:
-		return 0.0
 
 
 func _triangularInterpolation(P, A, B, C) -> Vector3:
