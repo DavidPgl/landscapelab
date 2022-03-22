@@ -23,7 +23,7 @@ var roads = {}
 var debug_points = []
 
 
-const heightmap_size: float = 200.0
+const heightmap_size: float = 50.0
 const heightmap_resolution: float = 100.0
 const sample_rate: float = heightmap_size / heightmap_resolution
 
@@ -48,13 +48,13 @@ func load_new_data():
 	debug_points.clear()
 	var i = 0
 	for road in road_features:
-		if i == 4:
-			_create_road(road, road_network_info.road_instance_scene)
-		i += 1
+		_create_road(road, road_network_info.road_instance_scene)
+		
 
 
 # OVERRIDE #
 func apply_new_data():
+	
 	if debug_draw:
 		$TerrainLOD0.apply_textures()
 		for child in $Debug.get_children():
@@ -96,7 +96,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		var bx = x_grid
 		var bz = z_grid
 		# Choose B depending on position in quad
-		var in_lower_triangle: bool = fmod(point.x, sample_rate) + fmod(point.z, sample_rate) <= sample_rate
+		var in_lower_triangle: bool = fposmod(point.x, sample_rate) + fposmod(point.z, sample_rate) <= sample_rate
 		if not in_lower_triangle:
 			bx += 1
 			bz += 1
@@ -131,7 +131,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	
 		var x_grid_point = null
 		var z_grid_point = null
-		
+		var test = 0
 		while true:
 			
 			var direction: Vector3 = next_point - current_point
@@ -199,20 +199,16 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 					# Calculate sampling grid offset
 					var offset: float = 0.0
 					
-					# Go directly to other side of grid
-					if is_reverse_grid_z:
-						offset += sample_rate * sign(direction.z)
+					# If the direction is positive, go to the next grid on the right
+					if direction.x > 0:
+						offset = (sample_rate - fposmod(current_point.x, sample_rate))
+					# If the direction is negative, go to the next grid on the left
 					else:
-						# If the direction is positive, go to the next grid on the right
-						if direction.x > 0:
-							offset = (sample_rate - fmod(current_point.x, sample_rate))
-						# If the direction is negative, go to the next grid on the left
-						else:
-							offset = (fmod(current_point.x, sample_rate)) * -1
-						
-						# Going from one grid point to the next
-						if offset == 0.0:
-							offset += sample_rate * sign(direction.x)
+						offset = (fposmod(current_point.x, sample_rate)) * -1
+					
+					# Going from one grid point to the next
+					if offset == 0.0:
+						offset += sample_rate * sign(direction.x)
 						
 					var z = direction.z / direction.x * offset
 					x_grid_point = Vector3(current_point.x + offset, 0, current_point.z + z)
@@ -229,16 +225,13 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				if non_parallel && intersections >= 1:
 					var offset: float = 0.0
 					
-					if is_reverse_grid_z:
-						offset += sample_rate * sign(direction.z)
+					if direction.z > 0:
+						offset = (sample_rate - fposmod(current_point.z, sample_rate))
 					else:
-						if direction.z > 0:
-							offset = (sample_rate - fmod(current_point.z, sample_rate))
-						else:
-							offset = (fmod(current_point.z, sample_rate)) * -1
-						
-						if offset == 0.0:
-							offset += sample_rate * sign(direction.z)
+						offset = (fposmod(current_point.z, sample_rate)) * -1
+					
+					if offset == 0.0:
+						offset += sample_rate * sign(direction.z)
 					
 					var x = direction.x / direction.z * offset
 					z_grid_point = Vector3(current_point.x + x, 0, current_point.z + offset)
@@ -252,7 +245,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				break
 			
 			# Add closest one
-			if z_grid_point == null || x_grid_point != null && current_point.distance_squared_to(x_grid_point) <= current_point.distance_squared_to(z_grid_point):
+			if z_grid_point == null || (x_grid_point != null && current_point.distance_squared_to(x_grid_point) <= current_point.distance_squared_to(z_grid_point)):
 				road_curve.add_point(x_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				current_point = x_grid_point
 				x_grid_point = null

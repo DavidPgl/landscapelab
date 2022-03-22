@@ -6,7 +6,7 @@
 [ext_resource path="res://Layers/Renderers/Terrain/Materials/TerrainShader.shader" type="Shader" id=4]
 
 [sub_resource type="CubeMesh" id=1]
-size = Vector3( 0.05, 0.05, 0.05 )
+size = Vector3( 0.1, 0.1, 0.1 )
 
 [sub_resource type="SpatialMaterial" id=6]
 albedo_color = Color( 1, 0, 1, 1 )
@@ -63,7 +63,7 @@ material/0 = SubResource( 4 )
 material_override = SubResource( 5 )
 inner_mesh = ExtResource( 2 )
 is_inner = true
-size = 200.0
+size = 50.0
 ortho_resolution = 1500
 landuse_resolution = 50
 
