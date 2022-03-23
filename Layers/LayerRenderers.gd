@@ -92,6 +92,7 @@ func apply_center_to_renderer(center_array, renderer) -> void:
 	if renderer is LayerRenderer and renderer.layer.is_visible and renderer.center != center_array:
 			renderers_count += 1
 			renderer.center = center_array
+			renderer.new_data_applied = false
 			
 			logger.debug("Child {} beginning to load", LOG_MODULE)
 			var task = ThreadPool.Task.new(renderer, "load_new_data")
@@ -129,7 +130,8 @@ func _on_renderer_finished(renderer_name):
 # Called when all renderers are done loading data in a thread and ready to display it.
 func _apply_renderers_data():
 	for renderer in get_children():
-		if renderer is LayerRenderer and renderer.layer.is_visible:
+		if renderer is LayerRenderer and renderer.layer.is_visible and not renderer.new_data_applied:
+			renderer.new_data_applied = true
 			renderer.apply_new_data()
 	
 	emit_signal("loading_finished")

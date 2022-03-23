@@ -8,6 +8,8 @@ var layer: Layer
 # Offset to use as the center position
 var center := [0, 0]
 
+var new_data_applied: bool = false
+
 # Time management
 var time_manager setget set_time_manager
 var is_daytime = true
