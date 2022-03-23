@@ -90,6 +90,7 @@ func digest_geopackage():
 				"Added %s-layer: %s" % [Layer.RenderType.keys()[layer.render_type], layer.name],
 				LOG_MODULE
 			)
+			layer.set_visible(layer_config.is_visible)
 			Layers.add_layer(layer)
 	
 	# Loading Scenarios

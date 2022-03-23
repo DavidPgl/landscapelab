@@ -80,6 +80,10 @@ func _ready():
 		_set_color(pressed_color)
 
 
+func refresh() -> void:
+	_mouse_exited()
+
+
 func _set_color(color: Color):
 	material.set_shader_param("color", Vector3(color.r, color.g, color.b))
 

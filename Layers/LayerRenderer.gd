@@ -14,9 +14,16 @@ var is_daytime = true
 
 const LOG_MODULE := "LAYERRENDERERS"
 
+signal layer_visibility_changed(is_visible)
+
 
 func _ready():
 	layer.connect("visibility_changed", self, "set_visible")
+
+
+func set_visible(is_visible):
+	.set_visible(is_visible)
+	emit_signal("layer_visibility_changed", is_visible)
 
 
 # Overload with the functionality to load new data, but not use (visualize) it yet. Run in a thread,

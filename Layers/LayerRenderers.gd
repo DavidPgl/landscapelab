@@ -52,6 +52,7 @@ func add_child(child: Node, legible_unique_name: bool = false):
 		logger.debug("Adding child %s to %s, but not yet loading its data due to no available center position"
 				% [child.name, name], LOG_MODULE)
 		.add_child(child, legible_unique_name)
+		child.connect("layer_visibility_changed", self, "_on_layer_visibility_changed", [child])
 		return
 	
 	# Give the child a center position
@@ -82,14 +83,14 @@ func apply_center(center_array):
 	renderers_finished = 0
 	renderers_count = 0
 	
-	# Get the number of renderers first to avoid race conditions
-	for renderer in get_children():
-		if renderer is LayerRenderer:
-			renderers_count += 1
-	
 	# Now, load the data of each renderer
 	for renderer in get_children():
-		if renderer is LayerRenderer:
+		apply_center_to_renderer(center_array, renderer)
+
+
+func apply_center_to_renderer(center_array, renderer) -> void:
+	if renderer is LayerRenderer and renderer.layer.is_visible and renderer.center != center_array:
+			renderers_count += 1
 			renderer.center = center_array
 			
 			logger.debug("Child {} beginning to load", LOG_MODULE)
@@ -128,7 +129,15 @@ func _on_renderer_finished(renderer_name):
 # Called when all renderers are done loading data in a thread and ready to display it.
 func _apply_renderers_data():
 	for renderer in get_children():
-		if renderer is LayerRenderer:
+		if renderer is LayerRenderer and renderer.layer.is_visible:
 			renderer.apply_new_data()
 	
 	emit_signal("loading_finished")
+
+
+func _on_layer_visibility_changed(is_visible: bool, renderer) -> void:
+	if is_visible:
+		apply_center_to_renderer(position_manager.get_center(), renderer)
+	
+
+

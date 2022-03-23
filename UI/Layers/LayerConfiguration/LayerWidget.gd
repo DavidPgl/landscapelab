@@ -21,6 +21,8 @@ func _ready():
 	edit_window.connect("change_color_tag", self, "_change_color_tag")
 	visibility_button.connect("toggled", self, "_layer_change_visibility")
 	layer.connect("layer_changed", self, "_reload")
+	visibility_button.pressed = !layer.is_visible
+	visibility_button.refresh()
 
 
 func _reload():
