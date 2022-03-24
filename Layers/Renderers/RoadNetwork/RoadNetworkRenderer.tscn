@@ -6,7 +6,7 @@
 [ext_resource path="res://Layers/Renderers/Terrain/Materials/TerrainShader.shader" type="Shader" id=4]
 
 [sub_resource type="CubeMesh" id=1]
-size = Vector3( 0.1, 0.1, 0.1 )
+size = Vector3( 0.05, 0.05, 0.05 )
 
 [sub_resource type="SpatialMaterial" id=6]
 albedo_color = Color( 1, 0, 1, 1 )
@@ -38,7 +38,6 @@ shader_param/size = null
 
 [node name="RoadNetworkRenderer" type="Spatial"]
 script = ExtResource( 1 )
-debug_draw = true
 
 [node name="Debug_Point_Start" type="MeshInstance" parent="."]
 mesh = SubResource( 1 )
@@ -57,8 +56,6 @@ material/0 = SubResource( 3 )
 mesh = SubResource( 1 )
 material/0 = SubResource( 4 )
 
-[node name="Debug" type="Node" parent="."]
-
 [node name="TerrainLOD0" parent="." instance=ExtResource( 3 )]
 material_override = SubResource( 5 )
 inner_mesh = ExtResource( 2 )
@@ -67,6 +64,8 @@ size = 50.0
 ortho_resolution = 1500
 landuse_resolution = 50
 
-[node name="Roads" type="Node" parent="."]
+[node name="Debug" type="Spatial" parent="."]
 
-[node name="Intersections" type="Node" parent="."]
+[node name="Roads" type="Spatial" parent="."]
+
+[node name="Intersections" type="Spatial" parent="."]

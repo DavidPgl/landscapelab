@@ -15,12 +15,14 @@ class_name RoadNetworkRenderer
 export(bool) var debug_draw: bool = false
 
 
-var radius = 100000
-var max_features = 10000
+var radius = 500
+var max_features = 100000
 
 # Road id to road instance
-var roads = {}
-var debug_points = []
+var roads: Dictionary = {}
+var roads_to_add: Dictionary = {}
+var roads_to_delete: Array = []
+var debug_points: Array = []
 
 
 const heightmap_size: float = 50.0
@@ -39,22 +41,21 @@ func load_new_data():
 		$TerrainLOD0.position_y = center[1]
 		$TerrainLOD0.build()
 	
-	
 	var road_network_info: Layer.RoadNetworkRenderInfo = layer.render_info
 	var road_features = road_network_info.road_layer.get_features_near_position(center[0], center[1], radius, max_features)
 	var intersection_features = road_network_info.intersection_layer.get_features_near_position(center[0], center[1], radius, max_features)
-	
-	roads.clear()
-	debug_points.clear()
+
 	var i = 0
 	for road in road_features:
+#		if i >= 10:
+#			return
+#		i += 1
 		_create_road(road, road_network_info.road_instance_scene)
-		
+
 
 
 # OVERRIDE #
 func apply_new_data():
-	
 	if debug_draw:
 		$TerrainLOD0.apply_textures()
 		for child in $Debug.get_children():
@@ -64,18 +65,36 @@ func apply_new_data():
 	
 	
 	# Remove old objects
-	for child in $Roads.get_children():
-		child.queue_free()
+	for road in $Roads.get_children():
+		var road_id: int = int(road.name)
+		if roads_to_delete.has(road_id):
+			roads.erase(road_id)
+			road.queue_free()
+		# TODO: This check should not be necessary!
+		elif roads.has(road_id):
+			roads[road_id].transform.origin -= Vector3(shift[0], 0, shift[1])
 	
 	# Add new objects
-	for rode in roads.values():
-		$Roads.add_child(rode)
-		rode.apply_attributes()
+	for road_id in roads_to_add.keys():
+		var road = roads_to_add[road_id]
+		road.name = str(road_id)
+		$Roads.add_child(road)
+		road.apply_attributes()
+		roads[road_id] = road
+	
+	roads_to_add.clear()
+	roads_to_delete = roads.keys()
+	debug_points.clear()
 
 
 
 func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
-	var road_id = road_feature.get_attribute("edge_id")
+	var road_id: int = int(road_feature.get_attribute("edge_id"))
+	# If road already exists, skip and remove it from to-delete
+	if roads.has(road_id):
+		roads_to_delete.erase(road_id)
+		return
+	
 	var road_width = float(road_feature.get_attribute("width"))
 	
 	# Create Road instance
@@ -128,6 +147,9 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	for i in range(curve_point_count - 1):
 		var current_point = road_curve.get_point_position(current_point_index)
 		var next_point = road_curve.get_point_position(current_point_index + 1)
+		
+		var next_point_on_x_grid: bool = (next_point.x / sample_rate) == floor((next_point.x / sample_rate))
+		var next_point_on_z_grid: bool = (next_point.z / sample_rate) == floor((next_point.z / sample_rate))
 	
 		var x_grid_point = null
 		var z_grid_point = null
@@ -138,52 +160,55 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			var x_grid = floor(current_point.x / sample_rate)
 			var z_grid = floor(current_point.z / sample_rate)
 			
-			var is_reverse_grid_x: bool = (current_point.x / sample_rate) == x_grid && direction.x < 0
-			var is_reverse_grid_z: bool = (current_point.z / sample_rate) == z_grid && direction.z < 0
+			var on_x_grid_and_decending: bool = (current_point.x / sample_rate) == x_grid && direction.x < 0
+			var on_z_grid_and_decending: bool = (current_point.z / sample_rate) == z_grid && direction.z < 0
 			
 			# INTERSECTION WITH DIAGONAL
 			
-			# If point is exactly on grid and direction is negative, move points 'back'
-			if is_reverse_grid_x:
-				x_grid -= 1
+			# Non-Parallel to quad diagonal
+			if direction.z == 0 || direction.x / direction.z != -1:
 			
-			if is_reverse_grid_z:
-				z_grid -= 1
-			
-			
-			var A = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
-			var C = Vector3(x_grid * sample_rate, 0, (z_grid + 1) * sample_rate)
-			
-			# Calculate intersection values
-			var den: float = (current_point.x - next_point.x) * (C.z - A.z) - (current_point.z - next_point.z) * (C.x - A.x)
-			var t: float = ((current_point.x - C.x) * (C.z - A.z) - (current_point.z - C.z) * (C.x - A.x)) / den
-			var u: float = -(((current_point.x - next_point.x) * (current_point.z - C.z) - (current_point.z - next_point.z) * (current_point.x - C.x)) / den)
-			
-			# Only continue if intersection is with the line
-			if t >= 0.0 && t <= 1.0 && u >= 0.0 && u <= 1.0:
-				var I = Vector3(
-					current_point.x + t * (next_point.x - current_point.x),
-					0,
-					current_point.z + t * (next_point.z - current_point.z))
+				# If point is exactly on grid and direction is negative, move points 'back'
+				if on_x_grid_and_decending:
+					x_grid -= 1
 				
-				# Calculate vectors for projection without z
-				var CI = I - C
-				var CA = A - C
+				if on_z_grid_and_decending:
+					z_grid -= 1
 				
-				# Calculate actual intersection point with z
-				A = _move_to_ground_height(A)
-				C = _move_to_ground_height(C)
 				
-				var intersection_point = (CI.length() / CA.length()) * (A - C) + C
+				var A = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
+				var C = Vector3(x_grid * sample_rate, 0, (z_grid + 1) * sample_rate)
 				
-				# Add intersection to curve
-				road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
-				current_point_index += 1
+				# Calculate intersection values
+				var den: float = (current_point.x - next_point.x) * (C.z - A.z) - (current_point.z - next_point.z) * (C.x - A.x)
+				var t: float = ((current_point.x - C.x) * (C.z - A.z) - (current_point.z - C.z) * (C.x - A.x)) / den
+				var u: float = -(((current_point.x - next_point.x) * (current_point.z - C.z) - (current_point.z - next_point.z) * (current_point.x - C.x)) / den)
 				
-				if debug_draw:
-					var debug_point: MeshInstance = $Debug_Point_Intersect.duplicate()
-					debug_point.transform.origin = intersection_point
-					debug_points.append(debug_point)
+				# Only continue if intersection is with the line
+				if t >= 0.0 && t <= 1.0 && u >= 0.0 && u <= 1.0:
+					var I = Vector3(
+						current_point.x + t * (next_point.x - current_point.x),
+						0,
+						current_point.z + t * (next_point.z - current_point.z))
+					
+					# Calculate vectors for projection without z
+					var CI = I - C
+					var CA = A - C
+					
+					# Calculate actual intersection point with z
+					A = _move_to_ground_height(A)
+					C = _move_to_ground_height(C)
+					
+					var intersection_point = (CI.length() / CA.length()) * (A - C) + C
+					
+					# Add intersection to curve
+					road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+					current_point_index += 1
+					
+					if debug_draw:
+						var debug_point: MeshInstance = $Debug_Point_Intersect.duplicate()
+						debug_point.transform.origin = intersection_point
+						debug_points.append(debug_point)
 			
 			# INTERSECTION WITH GRID AXES
 			
@@ -191,8 +216,12 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			if x_grid_point == null:
 				var non_parallel: bool = direction.x != 0
 				var intersections: float = abs(floor(next_point.x / sample_rate) - floor(current_point.x / sample_rate))
-				# Negative direction on grid edge case
-				if is_reverse_grid_x:
+				# Negative-direction-on-grid edge case
+				if on_x_grid_and_decending:
+					intersections -= 1
+				
+				# Next point being exactly on the grid, causing additional intersects
+				if next_point_on_x_grid:
 					intersections -= 1
 				
 				if non_parallel && intersections >= 1:
@@ -219,7 +248,10 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				var non_parallel: bool = direction.z != 0
 				var intersections: int = abs(floor(next_point.z / sample_rate) - floor(current_point.z / sample_rate))
 				
-				if is_reverse_grid_z:
+				if on_z_grid_and_decending:
+					intersections -= 1
+				
+				if next_point_on_z_grid:
 					intersections -= 1
 				
 				if non_parallel && intersections >= 1:
@@ -267,7 +299,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	
 	# TODO: Add other road info to road instance
 	
-	roads[road_id] = road_instance
+	roads_to_add[road_id] = road_instance
 
 
 func _move_to_ground_height(vector :Vector3) -> Vector3:
