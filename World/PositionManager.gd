@@ -102,11 +102,11 @@ func _check_for_world_shift():
 	var delta_squared = Vector2(center_node.translation.x, center_node.translation.z).length_squared()
 	
 	if (delta_squared > pow(shift_limit, 2)) and not loading:
-		_shift_world(center_node.translation.x, center_node.translation.z)
+		_shift_world(floor(center_node.translation.x), floor(center_node.translation.z))
 
 
 # Begin the process of world shifting by setting the new offset variables and emitting a signal.
-func _shift_world(delta_x, delta_z):
+func _shift_world(delta_x: int, delta_z: int):
 	logger.info("Shifting world by %f, %f" % [delta_x, delta_z], LOG_MODULE)
 	
 	loading = true

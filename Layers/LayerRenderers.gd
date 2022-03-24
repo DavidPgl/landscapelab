@@ -19,6 +19,8 @@ const LOG_MODULE := "LAYERRENDERERS"
 signal loading_started
 signal loading_finished
 
+var _is_loading: bool = false
+
 
 func set_position_manager(new_manager: PositionManager):
 	position_manager = new_manager
@@ -78,31 +80,40 @@ func add_child(child: Node, legible_unique_name: bool = false):
 # Apply a new center position to all child nodes
 func apply_center(center_array):
 	logger.debug("Applying new center center to all children in %s" % [name], LOG_MODULE)
-	emit_signal("loading_started")
+	
 	
 	renderers_finished = 0
 	renderers_count = 0
 	
 	# Now, load the data of each renderer
 	for renderer in get_children():
-		apply_center_to_renderer(center_array, renderer)
+		if renderer is LayerRenderer and renderer.layer.is_visible:
+			apply_center_to_renderer(center_array, renderer)
+	
+	if renderers_count == 0:
+		emit_signal("loading_finished")
 
 
-func apply_center_to_renderer(center_array, renderer) -> void:
-	if renderer is LayerRenderer and renderer.layer.is_visible and renderer.center != center_array:
-			renderers_count += 1
-			renderer.center = center_array
-			renderer.new_data_applied = false
-			
-			logger.debug("Child {} beginning to load", LOG_MODULE)
-			var task = ThreadPool.Task.new(renderer, "load_new_data")
-			
-			if load_data_threaded:
-				task.connect("finished", self, "_on_renderer_finished", [renderer.name], CONNECT_DEFERRED)
-				ThreadPool.enqueue_task(task)
-			else:
-				task.execute()
-				_on_renderer_finished(renderer.name)
+func apply_center_to_renderer(center_array: Array, renderer: LayerRenderer) -> void:
+	if renderer.center != center_array:
+		if not _is_loading:
+			_is_loading = true
+			emit_signal("loading_started")
+		
+		renderers_count += 1
+		renderer.center = center_array
+		renderer.shift = [position_manager.delta_x, position_manager.delta_z]
+		renderer.new_data_applied = false
+		
+		logger.debug("Child {} beginning to load", LOG_MODULE)
+		var task = ThreadPool.Task.new(renderer, "load_new_data")
+		
+		if load_data_threaded:
+			task.connect("finished", self, "_on_renderer_finished", [renderer.name], CONNECT_DEFERRED)
+			ThreadPool.enqueue_task(task)
+		else:
+			task.execute()
+			_on_renderer_finished(renderer.name)
 
 
 func get_debug_info():
@@ -125,20 +136,25 @@ func _on_renderer_finished(renderer_name):
 	
 	if renderers_finished == renderers_count:
 		_apply_renderers_data()
+		_is_loading = false
 
 
 # Called when all renderers are done loading data in a thread and ready to display it.
 func _apply_renderers_data():
 	for renderer in get_children():
 		if renderer is LayerRenderer and renderer.layer.is_visible and not renderer.new_data_applied:
-			renderer.new_data_applied = true
 			renderer.apply_new_data()
+			renderer.new_data_applied = true
 	
 	emit_signal("loading_finished")
 
 
-func _on_layer_visibility_changed(is_visible: bool, renderer) -> void:
-	apply_center_to_renderer(position_manager.get_center(), renderer)
+func _on_layer_visibility_changed(will_be_visible: bool, renderer) -> void:
+	if not renderer is LayerRenderer:
+		return
+		
+	if will_be_visible:
+		apply_center_to_renderer(position_manager.get_center(), renderer)
 	
 
 

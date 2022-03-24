@@ -17,12 +17,14 @@ onready var layer_name = get_node("RightContainer/Name")
 func _ready():
 	_reload()
 	
+	visibility_button.pressed = !layer.is_visible
+	visibility_button.refresh()
+	
 	edit_button.connect("pressed", self, "_pop_edit")
 	edit_window.connect("change_color_tag", self, "_change_color_tag")
 	visibility_button.connect("toggled", self, "_layer_change_visibility")
 	layer.connect("layer_changed", self, "_reload")
-	visibility_button.pressed = !layer.is_visible
-	visibility_button.refresh()
+	
 
 
 func _reload():

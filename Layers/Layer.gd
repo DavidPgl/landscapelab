@@ -7,7 +7,7 @@ class_name Layer
 # 
 
 var is_scored: bool = false
-var is_visible: bool = true setget set_visible
+var is_visible: bool = true setget _set_visible
 
 var name: String = "Not set"
 
@@ -37,13 +37,17 @@ signal visibility_changed(visible)
 signal layer_changed
 
 
-func set_visible(visible: bool):
+func set_visible_quiet(visible: bool) -> void:
 	is_visible = visible
-	emit_signal("visibility_changed", is_visible)
 
 
 func is_valid():
 	return render_type == RenderType.NONE or (render_info and render_info.is_valid())
+
+
+func _set_visible(visible: bool) -> void:
+	is_visible = visible
+	emit_signal("visibility_changed", is_visible)
 
 
 class UIInfo:

@@ -4,7 +4,7 @@
 
 [sub_resource type="Curve3D" id=1]
 _data = {
-"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.171115, -0.247567, 1.01639, 0, 0, 0, 0, 0, 0, -0.355516, -0.492177, 2.0506, 0, 0, 0, 0, 0, 0, -1.93859, -0.0993137, 4.23087 ),
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.171115, -0.247567, 1.01639, 0, 0, 0, 0, 0, 0, 0.523152, -0.729967, 4.70472, 0, 0, 0, 0, 0, 0, -2.5447, 0.0335902, 9.16938 ),
 "tilts": PoolRealArray( 0, 0, 0 )
 }
 
@@ -16,13 +16,13 @@ curve = SubResource( 1 )
 script = ExtResource( 1 )
 
 [node name="RoadPolygon" type="CSGPolygon" parent="."]
-polygon = PoolVector2Array( -0.01, 0, 0.01, 0, 0.01, 0.01, -0.01, 0.01 )
+polygon = PoolVector2Array( -2, 0, 2, 0, 2, 0.5, -2, 0.5 )
 mode = 2
 path_node = NodePath("..")
 path_interval_type = 0
-path_interval = 0.5
-path_simplify_angle = 0.0
-path_rotation = 2
+path_interval = 1.0
+path_simplify_angle = 10.0
+path_rotation = 1
 path_local = false
 path_continuous_u = false
 path_u_distance = 1.0
