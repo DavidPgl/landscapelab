@@ -138,8 +138,7 @@ func _apply_renderers_data():
 
 
 func _on_layer_visibility_changed(is_visible: bool, renderer) -> void:
-	if is_visible:
-		apply_center_to_renderer(position_manager.get_center(), renderer)
+	apply_center_to_renderer(position_manager.get_center(), renderer)
 	
 
 

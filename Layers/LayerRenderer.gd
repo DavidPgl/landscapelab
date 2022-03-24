@@ -8,7 +8,7 @@ var layer: Layer
 # Offset to use as the center position
 var center := [0, 0]
 
-var new_data_applied: bool = false
+var new_data_applied: bool = false setget set_new_data_applied
 
 # Time management
 var time_manager setget set_time_manager
@@ -26,6 +26,11 @@ func _ready():
 func set_visible(is_visible):
 	.set_visible(is_visible)
 	emit_signal("layer_visibility_changed", is_visible)
+
+
+func set_new_data_applied(value: bool) -> void:
+	.set_visible(value)
+	new_data_applied = value
 
 
 # Overload with the functionality to load new data, but not use (visualize) it yet. Run in a thread,
