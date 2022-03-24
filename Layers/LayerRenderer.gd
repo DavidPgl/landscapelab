@@ -25,9 +25,9 @@ func _ready():
 
 
 func set_visible(is_visible):
+	emit_signal("layer_visibility_changed", is_visible)
 	if new_data_applied:
 		.set_visible(is_visible)
-	emit_signal("layer_visibility_changed", is_visible)
 	
 
 
