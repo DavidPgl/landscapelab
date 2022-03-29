@@ -8,6 +8,7 @@ var width: float
 
 func apply_attributes() -> void:
 	_set_width(width)
+	_set_height(0.1)
 
 
 func _set_width(width: float) -> void:

@@ -12,11 +12,17 @@ class_name RoadNetworkRenderer
 # lanes_backwards	- Number of lanes in opposite direction
 # direction			- 2 both, 1 edge direction, 0 opposite to edge direction, -1 unknown
 
-export(bool) var debug_draw: bool = false
+export(bool) var debug_draw_points: bool = false
+export(bool) var debug_draw_mesh: bool = false
 
 
-var radius = 500
-var max_features = 100000
+const radius = 1000
+const max_features = 100000
+
+const mesh_size: float = 50.0
+const mesh_resolution: float = 100.0
+const sample_rate: float = mesh_size / mesh_resolution
+
 
 # Road id to road instance
 var roads: Dictionary = {}
@@ -24,10 +30,8 @@ var roads_to_add: Dictionary = {}
 var roads_to_delete: Array = []
 var debug_points: Array = []
 
+var height_correction: Array = []
 
-const heightmap_size: float = 50.0
-const heightmap_resolution: float = 100.0
-const sample_rate: float = heightmap_size / heightmap_resolution
 
 func _ready():
 	$TerrainLOD0.height_layer = layer.render_info.ground_height_layer
@@ -36,7 +40,7 @@ func _ready():
 # OVERRIDE #
 # Runs in a thread!
 func load_new_data():
-	if debug_draw:
+	if debug_draw_mesh:
 		$TerrainLOD0.position_x = center[0]
 		$TerrainLOD0.position_y = center[1]
 		$TerrainLOD0.build()
@@ -45,6 +49,10 @@ func load_new_data():
 	var road_features = road_network_info.road_layer.get_features_near_position(center[0], center[1], radius, max_features)
 	var intersection_features = road_network_info.intersection_layer.get_features_near_position(center[0], center[1], radius, max_features)
 
+	# Correction texture of same size as terrain mesh
+	height_correction.clear()
+	height_correction.resize(mesh_size * mesh_size)
+	
 	var i = 0
 	for road in road_features:
 #		if i >= 10:
@@ -56,8 +64,9 @@ func load_new_data():
 
 # OVERRIDE #
 func apply_new_data():
-	if debug_draw:
+	if debug_draw_mesh:
 		$TerrainLOD0.apply_textures()
+	if debug_draw_points:
 		for child in $Debug.get_children():
 			child.queue_free()
 		for point in debug_points:
@@ -95,8 +104,6 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		roads_to_delete.erase(road_id)
 		return
 	
-	var road_width = float(road_feature.get_attribute("width"))
-	
 	# Create Road instance
 	var road_instance = road_instance_scene.instance()
 	# Set road curve
@@ -133,7 +140,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		point.y = A.y * weights.x + B.y * weights.y + C.y * weights.z
 		road_curve.set_point_position(index, point)
 		
-		if debug_draw:
+		if debug_draw_points:
 			var debug_point: MeshInstance = $Debug_Point.duplicate() if index > 0 else $Debug_Point_Start.duplicate()
 			debug_point.transform.origin = point
 			debug_points.append(debug_point)
@@ -205,7 +212,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 					road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 					current_point_index += 1
 					
-					if debug_draw:
+					if debug_draw_points:
 						var debug_point: MeshInstance = $Debug_Point_Intersect.duplicate()
 						debug_point.transform.origin = intersection_point
 						debug_points.append(debug_point)
@@ -289,12 +296,14 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# Move to newly added point and start from there again
 			current_point_index += 1
 			
-			if debug_draw:
+			if debug_draw_points:
 				var debug_point: MeshInstance = $Debug_Point_Grid.duplicate()
 				debug_point.transform.origin = current_point
 				debug_points.append(debug_point)
 	
 	road_instance.curve = road_curve
+	
+	var road_width = float(road_feature.get_attribute("width"))
 	road_instance.width = road_width
 	
 	# TODO: Add other road info to road instance
