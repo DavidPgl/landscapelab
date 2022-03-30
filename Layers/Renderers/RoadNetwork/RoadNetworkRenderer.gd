@@ -19,7 +19,7 @@ export(bool) var debug_draw_mesh: bool = false
 const radius = 1000
 const max_features = 100000
 
-const mesh_size: float = 50.0
+const mesh_size: float = 100.0
 const mesh_resolution: float = 100.0
 const sample_rate: float = mesh_size / mesh_resolution
 
@@ -109,7 +109,6 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	# Set road curve
 	var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
 
-	# TODO: Maybe move this into main iteration loop
 	# Set initial road point heights
 	for index in range(road_curve.get_point_count()):
 		var point = road_curve.get_point_position(index)
@@ -154,126 +153,36 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	for i in range(curve_point_count - 1):
 		var current_point = road_curve.get_point_position(current_point_index)
 		var next_point = road_curve.get_point_position(current_point_index + 1)
-		
-		var next_point_on_x_grid: bool = (next_point.x / sample_rate) == floor((next_point.x / sample_rate))
-		var next_point_on_z_grid: bool = (next_point.z / sample_rate) == floor((next_point.z / sample_rate))
 	
 		var x_grid_point = null
 		var z_grid_point = null
-		var test = 0
 		while true:
 			
-			var direction: Vector3 = next_point - current_point
-			var x_grid = floor(current_point.x / sample_rate)
-			var z_grid = floor(current_point.z / sample_rate)
-			
-			var on_x_grid_and_decending: bool = (current_point.x / sample_rate) == x_grid && direction.x < 0
-			var on_z_grid_and_decending: bool = (current_point.z / sample_rate) == z_grid && direction.z < 0
-			
 			# INTERSECTION WITH DIAGONAL
-			
-			# Non-Parallel to quad diagonal
-			if direction.z == 0 || direction.x / direction.z != -1:
-			
-				# If point is exactly on grid and direction is negative, move points 'back'
-				if on_x_grid_and_decending:
-					x_grid -= 1
+			var intersection_point = _get_diagonal_point(current_point, next_point, sample_rate)
+			if intersection_point != null:
+				# Add intersection to curve
+				road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				current_point_index += 1
 				
-				if on_z_grid_and_decending:
-					z_grid -= 1
-				
-				
-				var A = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
-				var C = Vector3(x_grid * sample_rate, 0, (z_grid + 1) * sample_rate)
-				
-				# Calculate intersection values
-				var den: float = (current_point.x - next_point.x) * (C.z - A.z) - (current_point.z - next_point.z) * (C.x - A.x)
-				var t: float = ((current_point.x - C.x) * (C.z - A.z) - (current_point.z - C.z) * (C.x - A.x)) / den
-				var u: float = -(((current_point.x - next_point.x) * (current_point.z - C.z) - (current_point.z - next_point.z) * (current_point.x - C.x)) / den)
-				
-				# Only continue if intersection is with the line
-				if t >= 0.0 && t <= 1.0 && u >= 0.0 && u <= 1.0:
-					var I = Vector3(
-						current_point.x + t * (next_point.x - current_point.x),
-						0,
-						current_point.z + t * (next_point.z - current_point.z))
-					
-					# Calculate vectors for projection without z
-					var CI = I - C
-					var CA = A - C
-					
-					# Calculate actual intersection point with z
-					A = _move_to_ground_height(A)
-					C = _move_to_ground_height(C)
-					
-					var intersection_point = (CI.length() / CA.length()) * (A - C) + C
-					
-					# Add intersection to curve
-					road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
-					current_point_index += 1
-					
-					if debug_draw_points:
-						var debug_point: MeshInstance = $Debug_Point_Intersect.duplicate()
-						debug_point.transform.origin = intersection_point
-						debug_points.append(debug_point)
+				if debug_draw_points:
+					var debug_point: MeshInstance = $Debug_Point_Intersect.duplicate()
+					debug_point.transform.origin = intersection_point
+					debug_points.append(debug_point)
 			
 			# INTERSECTION WITH GRID AXES
 			
 			# Only calculate grid point if we don't have one from last calculation
 			if x_grid_point == null:
-				var non_parallel: bool = direction.x != 0
-				var intersections: float = abs(floor(next_point.x / sample_rate) - floor(current_point.x / sample_rate))
-				# Negative-direction-on-grid edge case
-				if on_x_grid_and_decending:
-					intersections -= 1
 				
-				# Next point being exactly on the grid, causing additional intersects
-				if next_point_on_x_grid:
-					intersections -= 1
-				
-				if non_parallel && intersections >= 1:
-					# Calculate sampling grid offset
-					var offset: float = 0.0
-					
-					# If the direction is positive, go to the next grid on the right
-					if direction.x > 0:
-						offset = (sample_rate - fposmod(current_point.x, sample_rate))
-					# If the direction is negative, go to the next grid on the left
-					else:
-						offset = (fposmod(current_point.x, sample_rate)) * -1
-					
-					# Going from one grid point to the next
-					if offset == 0.0:
-						offset += sample_rate * sign(direction.x)
-						
-					var z = direction.z / direction.x * offset
-					x_grid_point = Vector3(current_point.x + offset, 0, current_point.z + z)
+				x_grid_point = _get_x_grid_point(current_point, next_point, sample_rate)
+				if x_grid_point != null:
 					x_grid_point = _move_to_ground_height(x_grid_point)
 			
 			# Same for z
 			if z_grid_point == null:
-				var non_parallel: bool = direction.z != 0
-				var intersections: int = abs(floor(next_point.z / sample_rate) - floor(current_point.z / sample_rate))
-				
-				if on_z_grid_and_decending:
-					intersections -= 1
-				
-				if next_point_on_z_grid:
-					intersections -= 1
-				
-				if non_parallel && intersections >= 1:
-					var offset: float = 0.0
-					
-					if direction.z > 0:
-						offset = (sample_rate - fposmod(current_point.z, sample_rate))
-					else:
-						offset = (fposmod(current_point.z, sample_rate)) * -1
-					
-					if offset == 0.0:
-						offset += sample_rate * sign(direction.z)
-					
-					var x = direction.x / direction.z * offset
-					z_grid_point = Vector3(current_point.x + x, 0, current_point.z + offset)
+				z_grid_point = _get_z_grid_point(current_point, next_point, sample_rate)
+				if z_grid_point != null:
 					z_grid_point = _move_to_ground_height(z_grid_point)
 			
 			
@@ -324,6 +233,109 @@ func _triangularInterpolation(P, A, B, C) -> Vector3:
 	return Vector3(W1, W2, W3)
 
 
+func _get_x_grid_point(from: Vector3, to: Vector3, step_size: float):
+	var direction = to - from
+	
+	var offset = _get_grid_offset(from.x, to.x, step_size)
+	if offset == null:
+		return null
+	
+	var z = direction.z / direction.x * offset
+	return Vector3(from.x + offset, 0, from.z + z)
 
 
+
+func _get_z_grid_point(from: Vector3, to: Vector3, step_size: float):
+	var direction = to - from
+	
+	var offset = _get_grid_offset(from.z, to.z, step_size)
+	if offset == null:
+		return null
+	
+	var x = direction.x / direction.z * offset
+	return Vector3(from.x + x, 0, from.z + offset)
+
+
+func _get_grid_offset(from: float, to: float, step_size: float):
+	var direction = to - from
+	var grid_index = floor(from / step_size)
+	
+	var non_parallel: bool = direction != 0
+	var intersections: int = abs(floor(to / step_size) - grid_index)
+	
+	# Negative-direction-on-grid edge case
+	if (from / step_size) == grid_index && direction < 0:
+		intersections -= 1
+	
+	# Next point being exactly on the grid, causing additional intersects
+	if (to / step_size) == floor((to / step_size)):
+		intersections -= 1
+	
+	if non_parallel && intersections >= 1:
+		# Calculate sampling grid offset
+		var offset: float = 0.0
+		
+		# If the direction is positive, go to the next grid on the right
+		if direction > 0:
+			offset = (step_size - fposmod(from, step_size))
+		# If the direction is negative, go to the next grid on the left
+		else:
+			offset = (fposmod(from, step_size)) * -1
+		
+		# If the offset is zero, go to next grid index
+		if offset == 0.0:
+			offset += step_size * sign(direction)
+		
+		return offset
+	
+	return null
+
+
+func _get_diagonal_point(from: Vector3, to: Vector3, step_size: float):
+	var direction: Vector3 = to - from
+	
+	# Non-Parallel to quad diagonal
+	if direction.z != 0 && direction.x / direction.z == -1:
+		return null
+	
+	var x_grid = floor(from.x / step_size)
+	var z_grid = floor(from.z / step_size)
+	
+	var on_x_grid_and_decending: bool = (from.x / step_size) == x_grid && direction.x < 0
+	var on_z_grid_and_decending: bool = (from.z / step_size) == z_grid && direction.z < 0
+	
+	# If point is exactly on grid and direction is negative, move points 'back'
+	if on_x_grid_and_decending:
+		x_grid -= 1
+	
+	if on_z_grid_and_decending:
+		z_grid -= 1
+	
+	
+	var A = Vector3((x_grid + 1) * step_size, 0, z_grid * step_size)
+	var C = Vector3(x_grid * step_size, 0, (z_grid + 1) * step_size)
+	
+	# Calculate intersection values
+	var den: float = (from.x - to.x) * (C.z - A.z) - (from.z - to.z) * (C.x - A.x)
+	var t: float = ((from.x - C.x) * (C.z - A.z) - (from.z - C.z) * (C.x - A.x)) / den
+	var u: float = -(((from.x - to.x) * (from.z - C.z) - (from.z - to.z) * (from.x - C.x)) / den)
+	
+	# Only continue if intersection is with the line
+	if t >= 0.0 && t <= 1.0 && u >= 0.0 && u <= 1.0:
+		var I = Vector3(
+			from.x + t * (to.x - from.x),
+			0,
+			from.z + t * (to.z - from.z))
+		
+		# Calculate vectors for projection without z
+		var CI = I - C
+		var CA = A - C
+		
+		# Calculate actual intersection point with z
+		A = _move_to_ground_height(A)
+		C = _move_to_ground_height(C)
+		
+		return (CI.length() / CA.length()) * (A - C) + C
+	
+	return null
 
