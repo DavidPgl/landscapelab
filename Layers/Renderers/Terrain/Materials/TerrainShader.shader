@@ -51,7 +51,7 @@ float get_height(vec2 uv) {
 	// Get correction
 	float correction = texture(heightmap_correction, uv).r;
 	if (correction != 0.0) {
-		height -= 3.0;
+		height -= 2.0;
 	}
 	
 	// Clamp to prevent weird behavior with extreme nodata values

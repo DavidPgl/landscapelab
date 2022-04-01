@@ -16,7 +16,7 @@ export(bool) var debug_draw_points: bool = false
 export(bool) var debug_draw_mesh: bool = false
 
 
-const radius = 100
+const radius = 200
 const max_features = 100000
 
 const mesh_size: float = 100.0
@@ -57,9 +57,25 @@ func load_new_data():
 	height_correction_image.fill(Color(0,0,0))
 	
 	
-	var i = 0
 	for road in road_features:
 		_create_road(road, road_network_info.road_instance_scene)
+	
+	for road in roads.values():
+		var curve: Curve3D = road.curve
+		for index in curve.get_point_count():
+			var point: Vector3 = curve.get_point_position(index)
+			point -= Vector3(shift[0], 0, shift[1])
+			# Get points on other axis
+			_set_correction_heights_on_z_grid(point, sample_rate, road.width)
+			_set_correction_heights_on_x_grid(point, sample_rate, road.width)
+	
+	for road in roads_to_add.values():
+		var curve: Curve3D = road.curve
+		for index in curve.get_point_count():
+			var point: Vector3 = curve.get_point_position(index)
+			# Get points on other axis
+			_set_correction_heights_on_z_grid(point, sample_rate, road.width)
+			_set_correction_heights_on_x_grid(point, sample_rate, road.width)
 
 
 
@@ -83,8 +99,12 @@ func apply_new_data():
 			roads.erase(road_id)
 			road.queue_free()
 		# TODO: This check should not be necessary!
+		# Move objects that stay
 		elif roads.has(road_id):
-			roads[road_id].transform.origin -= Vector3(shift[0], 0, shift[1])
+			var curve: Curve3D = roads[road_id].curve
+			for index in curve.get_point_count():
+				curve.set_point_position(index, curve.get_point_position(index) - Vector3(shift[0], 0, shift[1]))
+			#roads[road_id].transform.origin -= Vector3(shift[0], 0, shift[1])
 	
 	# Add new objects
 	for road_id in roads_to_add.keys():
@@ -182,17 +202,12 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				x_grid_point = _get_x_grid_intersection(current_point, next_point, sample_rate)
 				if x_grid_point != null:
 					x_grid_point = _move_to_ground_height(x_grid_point)
-					
-					# Get points on other axis
-					_set_correction_heights_on_z_grid(x_grid_point, sample_rate, road_width)
 			
 			# Same for z
 			if z_grid_point == null:
 				z_grid_point = _get_z_grid_intersection(current_point, next_point, sample_rate)
 				if z_grid_point != null:
 					z_grid_point = _move_to_ground_height(z_grid_point)
-					
-					_set_correction_heights_on_x_grid(z_grid_point, sample_rate, road_width)
 			
 			
 			# If no grid points, done with this curve edge
