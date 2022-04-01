@@ -16,7 +16,7 @@ export(bool) var debug_draw_points: bool = false
 export(bool) var debug_draw_mesh: bool = false
 
 
-const radius = 1000
+const radius = 100
 const max_features = 100000
 
 const mesh_size: float = 100.0
@@ -30,11 +30,15 @@ var roads_to_add: Dictionary = {}
 var roads_to_delete: Array = []
 var debug_points: Array = []
 
-var height_correction: Array = []
+var height_correction_image: Image = Image.new()
+var height_correction_texture: ImageTexture = ImageTexture.new()
 
 
 func _ready():
 	$TerrainLOD0.height_layer = layer.render_info.ground_height_layer
+	
+	height_correction_image.create(mesh_size, mesh_size, false, Image.FORMAT_R8)
+	height_correction_texture.create_from_image(height_correction_image, Image.FORMAT_R8)
 
 
 # OVERRIDE #
@@ -49,15 +53,12 @@ func load_new_data():
 	var road_features = road_network_info.road_layer.get_features_near_position(center[0], center[1], radius, max_features)
 	var intersection_features = road_network_info.intersection_layer.get_features_near_position(center[0], center[1], radius, max_features)
 
-	# Correction texture of same size as terrain mesh
-	height_correction.clear()
-	height_correction.resize(mesh_size * mesh_size)
+	# Reset correction texture
+	height_correction_image.fill(Color(0,0,0))
+	
 	
 	var i = 0
 	for road in road_features:
-#		if i >= 10:
-#			return
-#		i += 1
 		_create_road(road, road_network_info.road_instance_scene)
 
 
@@ -65,6 +66,8 @@ func load_new_data():
 # OVERRIDE #
 func apply_new_data():
 	if debug_draw_mesh:
+		height_correction_texture.set_data(height_correction_image)
+		$TerrainLOD0.height_correction_texture = height_correction_texture
 		$TerrainLOD0.apply_textures()
 	if debug_draw_points:
 		for child in $Debug.get_children():
@@ -108,6 +111,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	var road_instance = road_instance_scene.instance()
 	# Set road curve
 	var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
+	var road_width = float(road_feature.get_attribute("width"))
 
 	# Set initial road point heights
 	for index in range(road_curve.get_point_count()):
@@ -175,15 +179,20 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# Only calculate grid point if we don't have one from last calculation
 			if x_grid_point == null:
 				
-				x_grid_point = _get_x_grid_point(current_point, next_point, sample_rate)
+				x_grid_point = _get_x_grid_intersection(current_point, next_point, sample_rate)
 				if x_grid_point != null:
 					x_grid_point = _move_to_ground_height(x_grid_point)
+					
+					# Get points on other axis
+					_set_correction_heights_on_z_grid(x_grid_point, sample_rate, road_width)
 			
 			# Same for z
 			if z_grid_point == null:
-				z_grid_point = _get_z_grid_point(current_point, next_point, sample_rate)
+				z_grid_point = _get_z_grid_intersection(current_point, next_point, sample_rate)
 				if z_grid_point != null:
 					z_grid_point = _move_to_ground_height(z_grid_point)
+					
+					_set_correction_heights_on_x_grid(z_grid_point, sample_rate, road_width)
 			
 			
 			# If no grid points, done with this curve edge
@@ -212,7 +221,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	
 	road_instance.curve = road_curve
 	
-	var road_width = float(road_feature.get_attribute("width"))
+	
 	road_instance.width = road_width
 	
 	# TODO: Add other road info to road instance
@@ -233,7 +242,7 @@ func _triangularInterpolation(P, A, B, C) -> Vector3:
 	return Vector3(W1, W2, W3)
 
 
-func _get_x_grid_point(from: Vector3, to: Vector3, step_size: float):
+func _get_x_grid_intersection(from: Vector3, to: Vector3, step_size: float):
 	var direction = to - from
 	
 	var offset = _get_grid_offset(from.x, to.x, step_size)
@@ -244,8 +253,7 @@ func _get_x_grid_point(from: Vector3, to: Vector3, step_size: float):
 	return Vector3(from.x + offset, 0, from.z + z)
 
 
-
-func _get_z_grid_point(from: Vector3, to: Vector3, step_size: float):
+func _get_z_grid_intersection(from: Vector3, to: Vector3, step_size: float):
 	var direction = to - from
 	
 	var offset = _get_grid_offset(from.z, to.z, step_size)
@@ -338,4 +346,81 @@ func _get_diagonal_point(from: Vector3, to: Vector3, step_size: float):
 		return (CI.length() / CA.length()) * (A - C) + C
 	
 	return null
+
+
+func _set_correction_heights_on_x_grid(point: Vector3, step_size: float, width: float) -> void:
+	height_correction_image.lock()
+	
+	var required_points: int = width / step_size + 3
+	
+	var x_grid_point: Vector3 = _get_x_grid_point(point, step_size, 0)
+	
+	var x: int = x_grid_point.x + mesh_size / 2
+	var z: int = x_grid_point.z + mesh_size / 2
+	
+	
+	if x < mesh_size && z < mesh_size && x >= 0 && z >= 0:
+		height_correction_image.set_pixel(x, z, Color(1, 0, 0))
+	
+	for i in range(1, required_points - 1, 1):
+		x_grid_point = _get_x_grid_point(point, step_size, i)
+		
+		x = x_grid_point.x + mesh_size / 2
+		z = x_grid_point.z + mesh_size / 2
+		if x < mesh_size && z < mesh_size && x >= 0 && z >= 0:
+			height_correction_image.set_pixel(x, z, Color(1, 0, 0))
+		
+		x_grid_point = _get_x_grid_point(point, step_size, -i)
+		x = x_grid_point.x + mesh_size / 2
+		z = x_grid_point.z + mesh_size / 2
+		if x < mesh_size && z < mesh_size && x >= 0 && z >= 0:
+			height_correction_image.set_pixel(x, z, Color(1, 0, 0))
+	
+	height_correction_image.unlock()
+
+
+func _set_correction_heights_on_z_grid(point: Vector3, step_size: float, width: float) -> void:
+	height_correction_image.lock()
+	
+	var required_points: int = width / step_size + 3
+	
+	var z_grid_point: Vector3 = _get_z_grid_point(point, step_size, 0)
+	
+	var x: int = z_grid_point.x + mesh_size / 2
+	var z: int = z_grid_point.z + mesh_size / 2
+	
+	
+	if x < mesh_size && z < mesh_size && x >= 0 && z >= 0:
+		height_correction_image.set_pixel(x, z, Color(1, 0, 0))
+	
+	for i in range(1, required_points - 1, 1):
+		z_grid_point = _get_z_grid_point(point, step_size, i)
+		x = z_grid_point.x + mesh_size / 2
+		z = z_grid_point.z + mesh_size / 2
+		
+		if x < mesh_size && z < mesh_size && x >= 0 && z >= 0:
+			height_correction_image.set_pixel(x, z, Color(1, 0, 0))
+		
+		z_grid_point = _get_z_grid_point(point, step_size, -i)
+		x = z_grid_point.x + mesh_size / 2
+		z = z_grid_point.z + mesh_size / 2
+		
+		if x < mesh_size && z < mesh_size && x >= 0 && z >= 0:
+			height_correction_image.set_pixel(x, z, Color(1, 0, 0))
+	
+	height_correction_image.unlock()
+
+
+func _get_x_grid_point(point: Vector3, step_size: float, offset_count: int):
+	return Vector3(
+		(floor(point.x / step_size) + offset_count) * step_size,
+		point.y,
+		floor(point.z / step_size) * step_size)
+
+
+func _get_z_grid_point(point: Vector3, step_size: float, offset_count: int):
+	return Vector3(
+		floor(point.x / step_size) * step_size,
+		point.y,
+		(floor(point.z / step_size) + offset_count) * step_size)
 

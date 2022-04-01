@@ -49,6 +49,8 @@ var current_roughness_ground_textures
 var current_albedo_fade_textures
 var current_normal_fade_textures
 
+var height_correction_texture
+
 signal updated_data
 
 
@@ -153,6 +155,9 @@ func apply_textures():
 	
 	if current_heightmap:
 		material_override.set_shader_param("heightmap", current_heightmap)
+		
+		if height_correction_texture:
+			material_override.set_shader_param("heightmap_correction", height_correction_texture)
 		
 		if has_node("CollisionMeshCreator"):
 			$CollisionMeshCreator.create_mesh(current_heightmap, size)
