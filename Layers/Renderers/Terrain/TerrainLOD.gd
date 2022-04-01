@@ -157,6 +157,7 @@ func apply_textures():
 		material_override.set_shader_param("heightmap", current_heightmap)
 		
 		if height_correction_texture:
+			material_override.set_shader_param("has_heightmap_correction", true)
 			material_override.set_shader_param("heightmap_correction", height_correction_texture)
 		
 		if has_node("CollisionMeshCreator"):

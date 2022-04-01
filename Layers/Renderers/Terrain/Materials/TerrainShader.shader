@@ -3,6 +3,7 @@ shader_type spatial;
 // Basic Terrain
 uniform sampler2D orthophoto: hint_albedo;
 uniform sampler2D heightmap;
+uniform bool has_heightmap_correction = false;
 uniform sampler2D heightmap_correction;
 uniform float height_scale = 1.0;
 
@@ -48,11 +49,14 @@ varying float camera_distance;
 float get_height(vec2 uv) {
 	float height = texture(heightmap, uv).r * height_scale;
 	
-	// Get correction
-	float correction = texture(heightmap_correction, uv).r;
-	if (correction != 0.0) {
-		height -= 2.0;
+	if (has_heightmap_correction){
+		// Get correction
+		float correction = texture(heightmap_correction, uv).r;
+		if (correction != 0.0) {
+			height -= 1.0;
+		}
 	}
+	
 	
 	// Clamp to prevent weird behavior with extreme nodata values
 	// TODO: Might have to be generalized further to be more robust

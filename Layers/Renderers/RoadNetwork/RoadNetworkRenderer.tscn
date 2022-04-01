@@ -23,6 +23,7 @@ albedo_color = Color( 0, 0, 1, 1 )
 [sub_resource type="ShaderMaterial" id=5]
 resource_local_to_scene = true
 shader = ExtResource( 4 )
+shader_param/has_heightmap_correction = false
 shader_param/height_scale = 1.0
 shader_param/has_surface_heights = false
 shader_param/surface_heights_start_distance = 800.0
@@ -60,6 +61,8 @@ material/0 = SubResource( 4 )
 material_override = SubResource( 5 )
 inner_mesh = ExtResource( 2 )
 is_inner = true
+size = 500.0
+heightmap_resolution = 500
 
 [node name="Debug" type="Spatial" parent="."]
 
