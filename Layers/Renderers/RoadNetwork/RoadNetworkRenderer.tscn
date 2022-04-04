@@ -61,8 +61,6 @@ material/0 = SubResource( 4 )
 material_override = SubResource( 5 )
 inner_mesh = ExtResource( 2 )
 is_inner = true
-size = 500.0
-heightmap_resolution = 500
 
 [node name="Debug" type="Spatial" parent="."]
 

@@ -4,7 +4,7 @@
 
 [sub_resource type="Curve3D" id=1]
 _data = {
-"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.171115, -0.247567, 1.01639, 0, 0, 0, 0, 0, 0, 0.523152, -0.729967, 4.70472, 0, 0, 0, 0, 0, 0, -2.5447, 0.0335902, 9.16938 ),
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.272682, -0.023309, 1.21285, 0, 0, 0, 0, 0, 0, -0.404851, -1.65393, 6.52499, 0, 0, 0, 0, 0, 0, 2.0688, -1.99847, 10.8915 ),
 "tilts": PoolRealArray( 0, 0, 0 )
 }
 
@@ -22,7 +22,7 @@ path_node = NodePath("..")
 path_interval_type = 0
 path_interval = 1.0
 path_simplify_angle = 0.0
-path_rotation = 1
+path_rotation = 2
 path_local = false
 path_continuous_u = false
 path_u_distance = 1.0

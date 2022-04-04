@@ -49,14 +49,13 @@ varying float camera_distance;
 float get_height(vec2 uv) {
 	float height = texture(heightmap, uv).r * height_scale;
 	
-	if (has_heightmap_correction){
-		// Get correction
+	if(has_heightmap_correction) {
+		// Apply correction
 		float correction = texture(heightmap_correction, uv).r;
-		if (correction != 0.0) {
-			height -= 1.0;
+		if(correction != 0.0){
+			height = correction;
 		}
 	}
-	
 	
 	// Clamp to prevent weird behavior with extreme nodata values
 	// TODO: Might have to be generalized further to be more robust
