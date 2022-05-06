@@ -1,4 +1,5 @@
 extends LayerRenderer
+class_name RealisticTerrainRenderer
 
 
 onready var lods = get_children()
@@ -25,6 +26,9 @@ func load_new_data():
 func apply_new_data():
 	for lod in get_children():
 		lod.apply_textures()
+
+func set_height_correction_texture(height_correction_texture) -> void:
+	lods[0].height_correction_texture = height_correction_texture
 
 
 func get_debug_info() -> String:

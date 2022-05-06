@@ -14,6 +14,7 @@
 [sub_resource type="ShaderMaterial" id=1]
 resource_local_to_scene = true
 shader = ExtResource( 2 )
+shader_param/has_heightmap_correction = false
 shader_param/height_scale = 1.0
 shader_param/has_surface_heights = false
 shader_param/surface_heights_start_distance = 800.0
@@ -75,6 +76,7 @@ shader_param/normalmap2 = SubResource( 9 )
 [sub_resource type="ShaderMaterial" id=11]
 resource_local_to_scene = true
 shader = ExtResource( 2 )
+shader_param/has_heightmap_correction = false
 shader_param/height_scale = 1.0
 shader_param/has_surface_heights = false
 shader_param/surface_heights_start_distance = 800.0
@@ -108,6 +110,7 @@ shader_param/normalmap2 = SubResource( 9 )
 [sub_resource type="ShaderMaterial" id=13]
 resource_local_to_scene = true
 shader = ExtResource( 2 )
+shader_param/has_heightmap_correction = false
 shader_param/height_scale = 1.0
 shader_param/has_surface_heights = false
 shader_param/surface_heights_start_distance = 800.0
@@ -141,6 +144,7 @@ shader_param/normalmap2 = SubResource( 9 )
 [sub_resource type="ShaderMaterial" id=15]
 resource_local_to_scene = true
 shader = ExtResource( 2 )
+shader_param/has_heightmap_correction = false
 shader_param/height_scale = 1.0
 shader_param/has_surface_heights = false
 shader_param/surface_heights_start_distance = 800.0
@@ -174,6 +178,7 @@ shader_param/normalmap2 = SubResource( 9 )
 [sub_resource type="ShaderMaterial" id=17]
 resource_local_to_scene = true
 shader = ExtResource( 2 )
+shader_param/has_heightmap_correction = false
 shader_param/height_scale = 1.0
 shader_param/has_surface_heights = false
 shader_param/surface_heights_start_distance = 800.0

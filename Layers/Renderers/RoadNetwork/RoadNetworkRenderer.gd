@@ -19,7 +19,7 @@ export(bool) var debug_draw_mesh: bool = false
 const radius = 200
 const max_features = 100000
 
-const mesh_size: float = 100.0
+const mesh_size: float = 50.0
 const mesh_resolution: float = 100.0
 const sample_rate: float = mesh_size / mesh_resolution
 
@@ -35,6 +35,8 @@ var height_correction_data: PoolByteArray
 var height_correction_image: Image = Image.new()
 var height_correction_texture: ImageTexture = ImageTexture.new()
 
+var terrain_renderer: RealisticTerrainRenderer
+
 
 func _ready():
 	$TerrainLOD0.height_layer = layer.render_info.ground_height_layer
@@ -44,6 +46,13 @@ func _ready():
 	height_correction_texture.create_from_image(height_correction_image, Image.FORMAT_RF)
 	
 	height_correction_data.resize(mesh_size * mesh_size * 4)
+	
+	# TODO: Replace with better access
+	# Find and get terrain renderer
+	for renderer in get_parent().get_children():
+		if renderer is RealisticTerrainRenderer:
+			terrain_renderer = renderer
+			return
 
 
 # OVERRIDE #
@@ -82,13 +91,15 @@ func load_new_data():
 			# Get points on other axis
 			_set_correction_heights_on_z_grid(point, sample_rate, road.width)
 			_set_correction_heights_on_x_grid(point, sample_rate, road.width)
+	
+	height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
+	height_correction_texture.set_data(height_correction_image)
+	terrain_renderer.set_height_correction_texture(height_correction_texture)
 
 
 # OVERRIDE #
 func apply_new_data():
 	if debug_draw_mesh:
-		height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
-		height_correction_texture.set_data(height_correction_image)
 		$TerrainLOD0.height_correction_texture = height_correction_texture
 		$TerrainLOD0.apply_textures()
 	
@@ -407,7 +418,7 @@ func _set_correction_heights_on_x_grid(point: Vector3, step_size: float, width: 
 
 # Calculates neighboring points in z direction and adds height difference to the correction texture
 func _set_correction_heights_on_z_grid(point: Vector3, step_size: float, width: float) -> void:
-	var required_points: int = width / step_size
+	var required_points: int =  width / step_size
 	
 	var z_grid_point: Vector3 = _get_z_grid_point(point, step_size, 0)
 	var x: int = z_grid_point.x + mesh_size / 2
@@ -438,9 +449,30 @@ func _set_correction_height(point_height: float, x: float, z: float) -> void:
 	var height: float = _get_ground_height(Vector3(x, 0, z))
 	# Wrap 64-bit float into Vector2 to cast it to 32-bit
 	var correction: Vector2 = Vector2(point_height - 0.05, 0.0)
+	var position: int = (z * mesh_size + x) * 4
+	
+	# Check previous correction
+	var old_bytes: PoolByteArray
+	# Vector2 header
+	old_bytes.append(5)
+	old_bytes.append(0)
+	old_bytes.append(0)
+	old_bytes.append(0)
+	# height as 32-bit float
+	old_bytes.append_array(height_correction_data.subarray(position, position + 3))
+	# zero as 32-bit float
+	old_bytes.append(0)
+	old_bytes.append(0)
+	old_bytes.append(0)
+	old_bytes.append(0)
+	# Reconstruct vector from bytes
+	var old_correction: Vector2 = bytes2var(old_bytes)
+	
+	if old_correction.x != 0.0 and old_correction.x < correction.x:
+		return
+	
 	# Convert Vector2 to bytes
 	var bytes: PoolByteArray = var2bytes(correction)
-	var position: int = (z * mesh_size + x) * 4
 	# Read only 4 bytes from x (Byte 4 to 7)
 	for i in range(4):
 		height_correction_data[position + i] = bytes[i + 4]
