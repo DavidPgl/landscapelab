@@ -39,7 +39,6 @@ shader_param/size = null
 
 [node name="RoadNetworkRenderer" type="Spatial"]
 script = ExtResource( 1 )
-debug_draw_mesh = true
 
 [node name="Debug_Point_Start" type="MeshInstance" parent="."]
 mesh = SubResource( 1 )
