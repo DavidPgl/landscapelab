@@ -81,16 +81,14 @@ func load_new_data():
 			var point: Vector3 = curve.get_point_position(index)
 			point -= Vector3(shift[0], 0, shift[1])
 			# Get points on other axis
-			_set_correction_heights_on_z_grid(point, sample_rate, road.width)
-			_set_correction_heights_on_x_grid(point, sample_rate, road.width)
+			_set_correction_heights(point, sample_rate, road.width)
 	
 	for road in roads_to_add.values():
 		var curve: Curve3D = road.curve
 		for index in curve.get_point_count():
 			var point: Vector3 = curve.get_point_position(index)
 			# Get points on other axis
-			_set_correction_heights_on_z_grid(point, sample_rate, road.width)
-			_set_correction_heights_on_x_grid(point, sample_rate, road.width)
+			_set_correction_heights(point, sample_rate, road.width)
 	
 	height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
 	height_correction_texture.set_data(height_correction_image)
@@ -389,66 +387,67 @@ func _get_diagonal_point(from: Vector3, to: Vector3, step_size: float):
 	return null
 
 
-# Calculates neighboring points in x direction and adds height difference to the correction texture
-func _set_correction_heights_on_x_grid(point: Vector3, step_size: float, width: float) -> void:
-	
+# Calculates neighboring points and adds height difference to the correction texture
+func _set_correction_heights(point: Vector3, step_size: float, width: float) -> void:
 	var required_points: int = width / step_size
+	var smooth_points: int = required_points / 2
 	
-	var x_grid_point: Vector3 = _get_x_grid_point(point, step_size, 0)
-	var x: int = x_grid_point.x + mesh_size / 2
-	var z: int = x_grid_point.z + mesh_size / 2
-	_set_correction_height(point.y, x, z)
+	var x_grid_point: Vector3
+	var z_grid_point: Vector3
+	var x: int
+	var z: int
 	
-	x_grid_point = _get_x_grid_point(point, step_size, -1)
-	x = x_grid_point.x + mesh_size / 2
-	z = x_grid_point.z + mesh_size / 2
-	_set_correction_height(point.y, x, z)
 	
-	for i in range(1, required_points - 1, 1):
+	for i in range(required_points):
 		x_grid_point = _get_x_grid_point(point, step_size, i)
 		x = x_grid_point.x + mesh_size / 2
 		z = x_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z)
+		_set_correction_height(point.y, x, z, x_grid_point, 1.0)
 		
 		x_grid_point = _get_x_grid_point(point, step_size, -i - 1)
 		x = x_grid_point.x + mesh_size / 2
 		z = x_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z)
-
-
-# Calculates neighboring points in z direction and adds height difference to the correction texture
-func _set_correction_heights_on_z_grid(point: Vector3, step_size: float, width: float) -> void:
-	var required_points: int =  width / step_size
-	
-	var z_grid_point: Vector3 = _get_z_grid_point(point, step_size, 0)
-	var x: int = z_grid_point.x + mesh_size / 2
-	var z: int = z_grid_point.z + mesh_size / 2
-	_set_correction_height(point.y, x, z)
-	
-	z_grid_point = _get_z_grid_point(point, step_size, -1)
-	x = z_grid_point.x + mesh_size / 2
-	z = z_grid_point.z + mesh_size / 2
-	_set_correction_height(point.y, x, z)
-	
-	for i in range(1, required_points - 1, 1):
+		_set_correction_height(point.y, x, z, x_grid_point, 1.0)
+		
 		z_grid_point = _get_z_grid_point(point, step_size, i)
 		x = z_grid_point.x + mesh_size / 2
 		z = z_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z)
+		_set_correction_height(point.y, x, z, z_grid_point, 1.0)
 		
 		z_grid_point = _get_z_grid_point(point, step_size, -i - 1)
 		x = z_grid_point.x + mesh_size / 2
 		z = z_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z)
+		_set_correction_height(point.y, x, z, z_grid_point, 1.0)
+	
+	for i in range(1, smooth_points, 1):
+		x_grid_point = _get_x_grid_point(point, step_size, i + required_points - 1)
+		x = x_grid_point.x + mesh_size / 2
+		z = x_grid_point.z + mesh_size / 2
+		_set_correction_height(point.y, x, z, x_grid_point, 1.0 / i)
+		
+		x_grid_point = _get_x_grid_point(point, step_size, -i - 1 + required_points - 1)
+		x = x_grid_point.x + mesh_size / 2
+		z = x_grid_point.z + mesh_size / 2
+		_set_correction_height(point.y, x, z, x_grid_point, 1.0 / i)
+		
+		z_grid_point = _get_z_grid_point(point, step_size, i + required_points - 1)
+		x = z_grid_point.x + mesh_size / 2
+		z = z_grid_point.z + mesh_size / 2
+		_set_correction_height(point.y, x, z, z_grid_point, 1.0 / i)
+		
+		z_grid_point = _get_z_grid_point(point, step_size, -i - 1 + required_points - 1)
+		x = z_grid_point.x + mesh_size / 2
+		z = z_grid_point.z + mesh_size / 2
+		_set_correction_height(point.y, x, z, z_grid_point, 1.0 / i)
 
 
 # Adds the height difference to the correction texture
-func _set_correction_height(point_height: float, x: float, z: float) -> void:
+func _set_correction_height(point_height: float, x: float, z: float, grid_point: Vector3, interpolation_factor: float) -> void:
 	if x >= mesh_size || z >= mesh_size || x < 0 || z < 0:
 		return
-	var height: float = _get_ground_height(Vector3(x, 0, z))
+	var height: float = _get_ground_height(grid_point)
 	# Wrap 64-bit float into Vector2 to cast it to 32-bit
-	var correction: Vector2 = Vector2(point_height - 0.05, 0.0)
+	var correction: Vector2 = Vector2(lerp(height, point_height - 0.05, interpolation_factor), 0.0)
 	var position: int = (z * mesh_size + x) * 4
 	
 	# Check previous correction
