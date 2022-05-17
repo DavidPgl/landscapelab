@@ -150,7 +150,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 
 	# Set initial road point heights
 	for index in range(road_curve.get_point_count()):
-		# Make sure all roads facing up
+		# Make sure all roads are facing up
 		road_curve.set_point_tilt(index, 0)
 		
 		var point = road_curve.get_point_position(index)

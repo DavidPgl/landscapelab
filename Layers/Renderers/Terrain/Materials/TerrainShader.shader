@@ -46,10 +46,10 @@ varying vec3 world_pos;
 varying float world_distance;
 varying float camera_distance;
 
-float get_height(vec2 uv) {
+float get_height(vec2 uv, bool use_correction) {
 	float height = texture(heightmap, uv).r * height_scale;
 	
-	if(has_heightmap_correction) {
+	if(use_correction && has_heightmap_correction) {
 		// Apply correction
 		float correction = texture(heightmap_correction, uv).r;
 		if(correction != 0.0){
@@ -68,17 +68,17 @@ vec3 get_normal(vec2 normal_uv_pos) {
 	float e = 1.0 / 100.0; // TODO: Take resolution as a uniform var and use that here
 	
 	// Sobel filter for getting the normal at this position
-	float bottom_left = get_height(normal_uv_pos + vec2(-e, -e));
-	float bottom_center = get_height(normal_uv_pos + vec2(0, -e));
-	float bottom_right = get_height(normal_uv_pos + vec2(e, -e));
+	float bottom_left = get_height(normal_uv_pos + vec2(-e, -e), false);
+	float bottom_center = get_height(normal_uv_pos + vec2(0, -e), false);
+	float bottom_right = get_height(normal_uv_pos + vec2(e, -e), false);
 	
-	float center_left = get_height(normal_uv_pos + vec2(-e, 0));
-	float center_center = get_height(normal_uv_pos + vec2(0, 0));
-	float center_right = get_height(normal_uv_pos + vec2(e, 0));
+	float center_left = get_height(normal_uv_pos + vec2(-e, 0), false);
+	float center_center = get_height(normal_uv_pos + vec2(0, 0), false);
+	float center_right = get_height(normal_uv_pos + vec2(e, 0), false);
 	
-	float top_left = get_height(normal_uv_pos + vec2(-e, e));
-	float top_center = get_height(normal_uv_pos + vec2(0, e));
-	float top_right = get_height(normal_uv_pos + vec2(e, e));
+	float top_left = get_height(normal_uv_pos + vec2(-e, e), false);
+	float top_center = get_height(normal_uv_pos + vec2(0, e), false);
+	float top_right = get_height(normal_uv_pos + vec2(e, e), false);
 	
 	vec3 long_normal;
 	
@@ -90,7 +90,7 @@ vec3 get_normal(vec2 normal_uv_pos) {
 }
 
 void vertex() {
-	VERTEX.y = get_height(UV);
+	VERTEX.y = get_height(UV, true);
 	NORMAL = get_normal(UV);
 	
 	world_pos = (WORLD_MATRIX * vec4(VERTEX, 1.0)).xyz;
