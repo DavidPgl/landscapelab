@@ -150,6 +150,9 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 
 	# Set initial road point heights
 	for index in range(road_curve.get_point_count()):
+		# Make sure all roads facing up
+		road_curve.set_point_tilt(index, 0)
+		
 		var point = road_curve.get_point_position(index)
 		
 		var x_grid = floor(point.x / sample_rate)
@@ -447,7 +450,7 @@ func _set_correction_height(point_height: float, x: float, z: float, grid_point:
 		return
 	var height: float = _get_ground_height(grid_point)
 	# Wrap 64-bit float into Vector2 to cast it to 32-bit
-	var correction: Vector2 = Vector2(lerp(height, point_height - 0.05, interpolation_factor), 0.0)
+	var correction: Vector2 = Vector2(lerp(height, point_height, interpolation_factor), 0.0)
 	var position: int = (z * mesh_size + x) * 4
 	
 	# Check previous correction
