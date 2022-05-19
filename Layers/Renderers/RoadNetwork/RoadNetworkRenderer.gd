@@ -19,7 +19,7 @@ export(bool) var debug_draw_mesh: bool = false
 const radius = 200
 const max_features = 100000
 
-const mesh_size: float = 50.0
+const mesh_size: float = 150.0
 const mesh_resolution: float = 100.0
 const sample_rate: float = mesh_size / mesh_resolution
 

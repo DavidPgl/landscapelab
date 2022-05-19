@@ -22,7 +22,6 @@ func _ready():
 	_reload()
 	
 	visibility_button.pressed = !layer.is_visible
-	visibility_button.refresh()
 	
 	edit_button.connect("pressed", self, "_pop_edit")
 	reload_button.connect("pressed", self, "_on_layer_reload_pressed")
