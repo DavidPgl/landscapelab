@@ -203,8 +203,22 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# INTERSECTION WITH DIAGONAL
 			var intersection_point = _get_diagonal_point(current_point, next_point, sample_rate)
 			if intersection_point != null:
+				# Calculate correct height by interpolating between grid points
+				var x_grid = floor(intersection_point.x / sample_rate)
+				var z_grid = floor(intersection_point.z / sample_rate)
+				
+				var A = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
+				var C = Vector3(x_grid * sample_rate, 0, (z_grid + 1) * sample_rate)
+				
+				var a_height = _get_ground_height(A)
+				var c_height = _get_ground_height(C)
+				
+				var weight: float = RoadNetworkUtil.inverse_lerp_vector(A, C, intersection_point)
+				var height = a_height * (1 - weight) + c_height * weight
+				var point = Vector3(intersection_point.x, height, intersection_point.z)
+				
 				# Add intersection to curve
-				road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				road_curve.add_point(point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				current_point_index += 1
 				
 				if debug_draw_points:
@@ -216,17 +230,41 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			
 			# Only calculate grid point if we don't have one from last calculation
 			if x_grid_point == null:
-				
 				x_grid_point = _get_x_grid_intersection(current_point, next_point, sample_rate)
 				if x_grid_point != null:
-					x_grid_point = _move_to_ground_height(x_grid_point)
+					# Calculate correct height by interpolating between grid points
+					var x_grid = floor(x_grid_point.x / sample_rate)
+					var z_grid = floor(x_grid_point.z / sample_rate)
+
+					var P1 = Vector3(x_grid * sample_rate, 0, z_grid * sample_rate)
+					var P2 = Vector3(x_grid * sample_rate, 0, (z_grid + 1) * sample_rate)
+					
+					var p1_height = _get_ground_height(P1)
+					var p2_height = _get_ground_height(P2)
+					
+					var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, x_grid_point)
+					
+					var height = p1_height * (1 - weight) + p2_height * weight
+					
+					x_grid_point.y = height
 			
 			# Same for z
 			if z_grid_point == null:
 				z_grid_point = _get_z_grid_intersection(current_point, next_point, sample_rate)
 				if z_grid_point != null:
-					z_grid_point = _move_to_ground_height(z_grid_point)
-			
+					var x_grid = floor(z_grid_point.x / sample_rate)
+					var z_grid = floor(z_grid_point.z / sample_rate)
+
+					var P1 = Vector3(x_grid * sample_rate, 0, z_grid * sample_rate)
+					var P2 = Vector3((x_grid + 1) * sample_rate, 0, z_grid * sample_rate)
+					
+					var p1_height = _get_ground_height(P1)
+					var p2_height = _get_ground_height(P2)
+					
+					var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, z_grid_point)
+					var height = p1_height * (1 - weight) + p2_height * weight
+					
+					z_grid_point.y = height
 			
 			# If no grid points, done with this curve edge
 			if x_grid_point == null && z_grid_point == null:
