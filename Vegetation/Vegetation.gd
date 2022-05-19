@@ -22,8 +22,8 @@ var fade_textures = {}
 
 # Global plant view distance modifyer (plants per renderer row)
 # TODO: Consider moving to settings
-var plant_extent_factor = 2.0 setget set_plant_extent_factor, get_plant_extent_factor
-var max_extent = 500.0
+var plant_extent_factor = 1.5 setget set_plant_extent_factor, get_plant_extent_factor
+var max_extent = 0.0
 signal new_plant_extent_factor(extent)
 
 signal new_data
@@ -39,9 +39,6 @@ func _ready():
 		logger.error("Couldn't load vegetation from config since none was available!", LOG_MODULE)
 		# TODO: Display the UI for entering paths instead
 		return
-	
-	VegetationImages.ground_image_base_path = config.get_value("paths", "ground_path")
-	VegetationImages.plant_image_base_path = config.get_value("paths", "plant_path")
 
 
 func set_plant_extent_factor(extent):
@@ -146,8 +143,7 @@ func filter_group_array_by_density_class(group_array: Array, density_class):
 			#  array, but with the filtered plants
 			new_array.append(PlantGroup.new(group.id,
 					group.name_en,
-					plants,
-					group.ground_texture))
+					plants))
 	
 	return new_array
 

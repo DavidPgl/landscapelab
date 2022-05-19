@@ -22,6 +22,7 @@ signal layer_visibility_changed(is_visible)
 
 func _ready():
 	layer.connect("visibility_changed", self, "set_visible")
+	layer.connect("refresh_view", self, "refresh")
 
 
 func set_visible(is_visible):
@@ -52,6 +53,14 @@ func get_debug_info() -> String:
 # Overload with applying and visualizing the data. Not run in a thread.
 func apply_new_data():
 	_apply_daytime_change(is_daytime)
+
+
+# Reload the data within this layer
+# Not threaded! Should only be called as a response to user input, otherwise use load_new_data and
+# apply_new_data threaded as intended
+func refresh():
+	load_new_data()
+	apply_new_data()
 
 
 func set_time_manager(manager: TimeManager):

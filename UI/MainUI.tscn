@@ -1,22 +1,21 @@
-[gd_scene load_steps=22 format=2]
+[gd_scene load_steps=20 format=2]
 
 [ext_resource path="res://UI/Tools/ToolsPanel/ToolsPanel.tscn" type="PackedScene" id=1]
-[ext_resource path="res://UI/CustomElements/AutoTextureButton.shader" type="Shader" id=2]
+[ext_resource path="res://Resources/Icons/ModernLandscapeLab/fullscreen.svg" type="Texture" id=2]
 [ext_resource path="res://UI/VRMenu/VRMenu.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Util/GroundedSpatial.tscn" type="PackedScene" id=4]
 [ext_resource path="res://UI/UIDock.gd" type="Script" id=5]
+[ext_resource path="res://UI/Theme/LightTheme.tres" type="Theme" id=6]
+[ext_resource path="res://UI/MenuBar/MenuBar.gd" type="Script" id=7]
 [ext_resource path="res://UI/UISplit.gd" type="Script" id=8]
-[ext_resource path="res://UI/Theme/DarkTheme.tres" type="Theme" id=9]
 [ext_resource path="res://UI/Layers/LayerConfiguration/LayerUI.tscn" type="PackedScene" id=10]
 [ext_resource path="res://UI/WorldViewPort.gd" type="Script" id=11]
 [ext_resource path="res://World/World.tscn" type="PackedScene" id=12]
 [ext_resource path="res://UI/CustomElements/AutoTextureButton.tscn" type="PackedScene" id=13]
 [ext_resource path="res://UI/DebugInfo/DebugInfo.tscn" type="PackedScene" id=14]
-[ext_resource path="res://Resources/Icons/ModernLandscapeLab/fullscreen.svg" type="Texture" id=15]
 [ext_resource path="res://UI/Layers/LayerManagement/LayerManagement.gd" type="Script" id=16]
 [ext_resource path="res://UI/LoadingLabel.gd" type="Script" id=17]
 [ext_resource path="res://UI/Fonts/TextOutlined.tres" type="DynamicFont" id=18]
-[ext_resource path="res://UI/ValuesMenu/ValuesMenu.tscn" type="PackedScene" id=19]
 [ext_resource path="res://UI/Scenarios/Scenarios.tscn" type="PackedScene" id=20]
 [ext_resource path="res://UI/MainUI.gd" type="Script" id=43]
 
@@ -28,28 +27,19 @@ func _input(event):
 	pass
 "
 
-[sub_resource type="ShaderMaterial" id=2]
-resource_local_to_scene = true
-shader = ExtResource( 2 )
-shader_param/color = Vector3( 0, 0, 0 )
-shader_param/rotation_radians = null
-shader_param/color_length_modulate_threshold = 1.5
-
 [node name="MainUI" type="Panel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme = ExtResource( 9 )
+theme = ExtResource( 6 )
 script = ExtResource( 43 )
-__meta__ = {
-"_edit_use_anchors_": false
-}
 pc_player_path = NodePath("MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World/FirstPersonPC")
 pos_manager_path = NodePath("MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World/PositionManager")
 time_manager_path = NodePath("MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World/TimeManager")
 weather_manager_path = NodePath("MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World/WeatherManager")
+layer_configurator_path = NodePath("MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World/LayerConfigurator")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchor_left = 0.005
@@ -65,16 +55,32 @@ __meta__ = {
 margin_right = 1900.0
 margin_bottom = 1069.0
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="MenuBar" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 margin_right = 1900.0
 margin_bottom = 31.0
+script = ExtResource( 7 )
 
-[node name="MenuButton" type="MenuButton" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="ProjectButton" type="MenuButton" parent="MarginContainer/VBoxContainer/MenuBar"]
 margin_right = 65.0
 margin_bottom = 31.0
 text = "Project"
-items = [ "Test", null, 0, false, false, 0, 0, null, "", false, "Item 1", null, 0, false, false, 1, 0, null, "", false, "Item 2", null, 0, false, false, 2, 0, null, "", false ]
 switch_on_hover = true
+
+[node name="GeopackageFileDialog" type="FileDialog" parent="MarginContainer/VBoxContainer/MenuBar/ProjectButton"]
+visible = true
+margin_left = 574.181
+margin_top = -543.997
+margin_right = 1260.18
+margin_bottom = -88.997
+window_title = "Open a File"
+dialog_text = "Load project from a preconfigured GeoPackage"
+mode = 0
+access = 2
+current_dir = "/home/karl/Nextcloud/Boku/landscapelab"
+current_path = "/home/karl/Nextcloud/Boku/landscapelab/"
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
 [node name="Split" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
 margin_top = 35.0
@@ -89,20 +95,20 @@ __meta__ = {
 }
 
 [node name="Left" type="HSplitContainer" parent="MarginContainer/VBoxContainer/Split"]
-margin_right = 238.0
+margin_right = 168.0
 margin_bottom = 1034.0
 mouse_filter = 1
 
 [node name="Left" type="VSplitContainer" parent="MarginContainer/VBoxContainer/Split/Left"]
-margin_right = 130.0
+margin_right = 60.0
 margin_bottom = 1034.0
 mouse_filter = 1
 script = ExtResource( 8 )
 
 [node name="Top" type="TabContainer" parent="MarginContainer/VBoxContainer/Split/Left/Left"]
-margin_right = 130.0
-margin_bottom = 413.0
-rect_min_size = Vector2( 100, 0 )
+margin_right = 60.0
+margin_bottom = 1034.0
+rect_min_size = Vector2( 60, 0 )
 tab_align = 0
 drag_to_rearrange_enabled = true
 script = ExtResource( 5 )
@@ -110,7 +116,7 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ToolsPanel" parent="MarginContainer/VBoxContainer/Split/Left/Left/Top" instance=ExtResource( 1 )]
+[node name="Tools" parent="MarginContainer/VBoxContainer/Split/Left/Left/Top" instance=ExtResource( 1 )]
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 5.0
@@ -121,8 +127,9 @@ focus_mode = 2
 size_flags_vertical = 0
 
 [node name="Bot" type="TabContainer" parent="MarginContainer/VBoxContainer/Split/Left/Left"]
+visible = false
 margin_top = 421.0
-margin_right = 130.0
+margin_right = 100.0
 margin_bottom = 1034.0
 tab_align = 0
 drag_to_rearrange_enabled = true
@@ -131,19 +138,9 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Values" parent="MarginContainer/VBoxContainer/Split/Left/Left/Bot" instance=ExtResource( 19 )]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 5.0
-margin_top = 38.0
-margin_right = -5.0
-margin_bottom = -5.0
-rect_min_size = Vector2( 0, 200 )
-focus_mode = 2
-
 [node name="Right" type="VSplitContainer" parent="MarginContainer/VBoxContainer/Split/Left"]
-margin_left = 138.0
-margin_right = 238.0
+margin_left = 68.0
+margin_right = 168.0
 margin_bottom = 1034.0
 rect_min_size = Vector2( 100, 0 )
 mouse_filter = 1
@@ -172,7 +169,7 @@ __meta__ = {
 }
 
 [node name="Right" type="HSplitContainer" parent="MarginContainer/VBoxContainer/Split"]
-margin_left = 246.0
+margin_left = 176.0
 margin_right = 1900.0
 margin_bottom = 1034.0
 mouse_filter = 1
@@ -180,26 +177,26 @@ split_offset = 839
 script = SubResource( 1 )
 
 [node name="Mid" type="VSplitContainer" parent="MarginContainer/VBoxContainer/Split/Right"]
-margin_right = 1346.0
+margin_right = 1416.0
 margin_bottom = 1034.0
 mouse_filter = 1
 size_flags_horizontal = 3
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Split/Right/Mid"]
-margin_right = 1346.0
+margin_right = 1416.0
 margin_bottom = 826.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="LayerManagement" type="MarginContainer" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer"]
-margin_right = 1346.0
+margin_right = 1416.0
 script = ExtResource( 16 )
 layer_ui_path = NodePath("../../../Right/Right/Bot/LayerUI")
 pos_manager_path = NodePath("../WorldViewPort/Viewport/World/PositionManager")
 
 [node name="WorldViewPort" type="ViewportContainer" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer"]
 margin_top = 4.0
-margin_right = 1346.0
+margin_right = 1416.0
 margin_bottom = 826.0
 rect_min_size = Vector2( 500, 500 )
 focus_mode = 2
@@ -209,11 +206,9 @@ stretch = true
 script = ExtResource( 11 )
 
 [node name="FullscreenButton" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort" instance=ExtResource( 13 )]
-material = SubResource( 2 )
-margin_right = 40.0
-margin_bottom = 40.0
-rect_min_size = Vector2( 40, 40 )
-texture_normal = ExtResource( 15 )
+margin_right = -1376.0
+margin_bottom = -990.0
+texture_normal = ExtResource( 2 )
 texture_name = "fullscreen"
 
 [node name="LoadingLabel" type="Label" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort"]
@@ -229,7 +224,7 @@ script = ExtResource( 17 )
 layer_renderers_path = NodePath("../Viewport/World/Terrain/LayerRenderers")
 
 [node name="Viewport" type="Viewport" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort"]
-size = Vector2( 1346, 822 )
+size = Vector2( 1416, 822 )
 handle_input_locally = false
 msaa = 2
 debanding = true
@@ -239,27 +234,30 @@ shadow_atlas_size = 4096
 
 [node name="World" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport" instance=ExtResource( 12 )]
 
+[node name="FirstPersonPC" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World" index="2"]
+transform = Transform( 0.998636, 0, 0.0517897, 0, 1, 0, -0.0517897, 0, 0.998636, 0, 1000, 0 )
+
 [node name="GroundedSpatial" parent="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World/FirstPersonPC" index="5" instance=ExtResource( 4 )]
 is_active = false
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/Split/Right/Mid"]
 margin_top = 834.0
-margin_right = 1346.0
+margin_right = 1416.0
 margin_bottom = 1034.0
 size_flags_vertical = 8
 
 [node name="DebugInfo" parent="MarginContainer/VBoxContainer/Split/Right/Mid/HBoxContainer" instance=ExtResource( 14 )]
 anchor_right = 0.0
 anchor_bottom = 0.0
-margin_right = 1346.0
+margin_right = 1416.0
 margin_bottom = 200.0
 rect_min_size = Vector2( 300, 0 )
 size_flags_horizontal = 3
 layer_renderers_path = NodePath("../../VBoxContainer/WorldViewPort/Viewport/World/Terrain/LayerRenderers")
 
 [node name="Right" type="HSplitContainer" parent="MarginContainer/VBoxContainer/Split/Right"]
-margin_left = 1354.0
-margin_right = 1654.0
+margin_left = 1424.0
+margin_right = 1724.0
 margin_bottom = 1034.0
 rect_min_size = Vector2( 300, 0 )
 mouse_filter = 1
@@ -296,7 +294,7 @@ script = ExtResource( 8 )
 
 [node name="Top" type="TabContainer" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right"]
 margin_right = 282.0
-margin_bottom = 74.0
+margin_bottom = 83.0
 tab_align = 0
 drag_to_rearrange_enabled = true
 script = ExtResource( 5 )
@@ -308,9 +306,10 @@ margin_right = -5.0
 margin_bottom = -5.0
 
 [node name="Bot" type="TabContainer" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right"]
-margin_top = 82.0
+margin_top = 91.0
 margin_right = 282.0
 margin_bottom = 1034.0
+size_flags_horizontal = 3
 tab_align = 0
 drag_to_rearrange_enabled = true
 script = ExtResource( 5 )
@@ -324,8 +323,36 @@ margin_right = -5.0
 margin_bottom = -5.0
 rect_scale = Vector2( 1, 1 )
 focus_mode = 2
-size_flags_horizontal = 0
 size_flags_vertical = 0
+
+[node name="LayerUIConfig" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI" index="0"]
+position_manager_path = NodePath("../../../../../Mid/VBoxContainer/WorldViewPort/Viewport/World/PositionManager")
+
+[node name="VBoxContainer" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI" index="1"]
+margin_left = 6.0
+margin_top = 4.0
+margin_right = 266.0
+margin_bottom = 896.0
+
+[node name="ScrollLayers" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI/VBoxContainer" index="0"]
+margin_right = 260.0
+margin_bottom = 848.0
+
+[node name="LayerContainer" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI/VBoxContainer/ScrollLayers" index="0"]
+margin_right = 260.0
+
+[node name="Menu" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI/VBoxContainer" index="1"]
+margin_top = 852.0
+margin_right = 260.0
+margin_bottom = 892.0
+
+[node name="DeleteLayer" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI/VBoxContainer/Menu" index="1"]
+margin_left = 44.0
+margin_right = 84.0
+
+[node name="Filter" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI/VBoxContainer/Menu" index="2"]
+margin_left = 88.0
+margin_right = 128.0
 
 [node name="Scenarios" parent="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot" instance=ExtResource( 20 )]
 visible = false
@@ -334,3 +361,4 @@ margin_bottom = -5.0
 
 [editable path="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World"]
 [editable path="MarginContainer/VBoxContainer/Split/Right/Mid/VBoxContainer/WorldViewPort/Viewport/World/FirstPersonPC"]
+[editable path="MarginContainer/VBoxContainer/Split/Right/Right/Right/Bot/LayerUI"]

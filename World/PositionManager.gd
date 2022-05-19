@@ -19,9 +19,16 @@ var center_node: Spatial setget set_center_node
 var terrain setget set_terrain
 var layer_configurator: Node setget set_layer_configurator
 
+var _previous_center_node_position := Vector2.ZERO
+var _center_node_velocity := Vector2.ZERO
+
 # TODO: all these will come from the configuration
-var world_shift_check_period: float = 1
+var world_shift_check_period: float = 0.5
 var world_shift_timer: float = 0
+
+var standing_shift_limit := 5.0
+var moving_shift_limit := 400.0
+
 var height = 100
 
 var shift_limit: float = Settings.get_setting("lod", "world-shift-distance")
@@ -65,7 +72,7 @@ func get_center_node_world_position():
 	return to_world_coordinates(center_node.translation)
 
 
-func translate_center_node():
+func translate_center_node(new_x, new_z):
 	pass
 
 
@@ -85,11 +92,17 @@ func set_center_node(node: Spatial):
 
 func set_layer_configurator(configurator: Node):
 	layer_configurator = configurator
+	layer_configurator.connect("center_changed", self, "set_offset")
 	x = layer_configurator.center.x
 	z = layer_configurator.center.z
 
 
 func _process(delta):
+	# Calculate center node velocity
+	var current_center_node_position = Vector2(center_node.translation.x, center_node.translation.z)
+	_center_node_velocity = (current_center_node_position - _previous_center_node_position) / delta
+	_previous_center_node_position = current_center_node_position
+	
 	world_shift_timer += delta
 	
 	if world_shift_timer > world_shift_check_period:
@@ -101,8 +114,14 @@ func _process(delta):
 func _check_for_world_shift():
 	var delta_squared = Vector2(center_node.translation.x, center_node.translation.z).length_squared()
 	
-	if (delta_squared > pow(shift_limit, 2)) and not loading:
-		_shift_world(floor(center_node.translation.x), floor(center_node.translation.z))
+	# Shift the world if we're standing, or if we've moved quite a bit
+	if ((_center_node_velocity == Vector2.ZERO and (delta_squared > pow(standing_shift_limit, 2))) \
+			or ((delta_squared > pow(moving_shift_limit, 2)))) and not loading:
+		# Shift towards the movement velocity in order to have data approximately where we're going
+		# TODO: Instead of the hardcoded 5 second estimate, we could take the previous loading time
+		#  But for this we need to have access to the LayerRenderers node here
+		_shift_world(center_node.translation.x + _center_node_velocity.x * 5.0,
+				center_node.translation.z + _center_node_velocity.y * 5.0)
 
 
 # Begin the process of world shifting by setting the new offset variables and emitting a signal.
@@ -141,7 +160,9 @@ func set_offset(new_x, new_z):
 	x = new_x
 	z = new_z
 	
-	# FIXME: shift the world accordingly (or remove this function entirely? currently unused)
+	emit_signal("new_center", [x, z])
+	delta_x = 0
+	delta_z = 0
 	
 	logger.debug("New offset: %d, %d" % [x, z], LOG_MODULE)
 

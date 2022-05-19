@@ -75,6 +75,7 @@ anchor_bottom = 0.0
 margin_top = 58.0
 margin_right = 775.0
 margin_bottom = 143.0
+show_raster_layers = false
 
 [node name="GeodataChooserHeight" parent="RightBox" instance=ExtResource( 5 )]
 anchor_right = 0.0
@@ -82,6 +83,7 @@ anchor_bottom = 0.0
 margin_top = 151.0
 margin_right = 775.0
 margin_bottom = 236.0
+show_feature_layer = false
 
 [node name="FileChooser" parent="RightBox/GeodataChooserHeight" index="0"]
 margin_right = 775.0
@@ -101,10 +103,6 @@ margin_right = 666.0
 [node name="Button" parent="RightBox/ObjectChooser" index="1"]
 margin_left = 674.0
 margin_right = 775.0
-
-[node name="FileDialog" parent="RightBox/ObjectChooser/Button" index="0"]
-current_dir = "/home/karl/Nextcloud/Boku/landscapelab"
-current_path = "/home/karl/Nextcloud/Boku/landscapelab/"
 
 [node name="Warning" parent="RightBox" instance=ExtResource( 4 )]
 visible = false

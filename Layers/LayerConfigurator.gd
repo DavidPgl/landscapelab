@@ -2,38 +2,117 @@ extends Configurator
 
 const SQLite = preload("res://addons/godot-sqlite/bin/gdsqlite.gdns")
 
-var center := Vector3.ZERO
+var center := Vector3.ZERO setget set_center
 var geopackage
 var external_layers = preload("res://Layers/ExternalLayer.gd").new()
 
 const LOG_MODULE := "LAYERCONFIGURATION"
 
+signal geodata_invalid
+signal center_changed(x, y)
+
+
+func set_center(c: Vector3):
+	center = c
+	emit_signal("center_changed", center.x, center.z)
+
 
 func _ready():
 	set_category("geodata")
-	digest_geopackage()
+	load_gpkg(get_setting("gpkg-path"))
 
 
-# Digests the information provided by the geopackage
-func digest_geopackage():
-	var geopackage_path = get_setting("gpkg-path")
+# Gets called from main_ui
+func check_default():
+	set_category("geodata")
+	if(not validate_gpkg(get_setting("gpkg-path"))):
+		emit_signal("geodata_invalid")
 
+
+func load_gpkg(geopackage_path: String):
+	if(validate_gpkg(geopackage_path)):
+		digest_gpkg(geopackage_path)
+	else:
+		emit_signal("geodata_invalid")
+	
+	# FIXME: Game Engine Testing
+	var game_mode = GameMode.new()
+	
+	var wka = game_mode.add_game_object_collection_for_feature_layer("WKA", Layers.geo_layers["features"]["windmills"])
+	game_mode.game_object_collections["WKA"].add_implicit_attribute_mapping("MW", Layers.geo_layers["rasters"]["windturbine_potentials"])
+	game_mode.game_object_collections["WKA"].icon_name = "windmill_icon"
+	game_mode.game_object_collections["WKA"].desired_shape = "SQUARE_BRICK"
+	game_mode.game_object_collections["WKA"].desired_color = "BLUE_BRICK"
+	
+	var wka_condition = GreaterThanRasterCreationCondition.new("WKA Potential Condition", Layers.geo_layers["rasters"]["windturbine_potentials"], 0.0)
+	wka.add_creation_condition(wka_condition)
+	
+	var pv_small = game_mode.add_game_object_collection_for_feature_layer("PV klein", Layers.geo_layers["features"]["pv_small"])
+	game_mode.game_object_collections["PV klein"].add_implicit_attribute_mapping("MW", Layers.geo_layers["rasters"]["new_pv_potentials"])
+	game_mode.game_object_collections["PV klein"].icon_name = "pv_icon"
+	game_mode.game_object_collections["PV klein"].desired_shape = "SQUARE_BRICK"
+	game_mode.game_object_collections["PV klein"].desired_color = "RED_BRICK"
+	
+	var pv_large = game_mode.add_game_object_collection_for_feature_layer("PV groß", Layers.geo_layers["features"]["pv_large"])
+	game_mode.game_object_collections["PV groß"].add_implicit_attribute_mapping("MW", Layers.geo_layers["rasters"]["new_pv_potentials"])
+	game_mode.game_object_collections["PV groß"].icon_name = "pv_icon"
+	game_mode.game_object_collections["PV groß"].desired_shape = "RECTANGLE_BRICK"
+	game_mode.game_object_collections["PV groß"].desired_color = "RED_BRICK"
+	
+	var pv_condition = GreaterThanRasterCreationCondition.new("PV Potential Condition", Layers.geo_layers["rasters"]["new_pv_potentials"], 0.0)
+	pv_small.add_creation_condition(pv_condition)
+	pv_large.add_creation_condition(pv_condition)
+
+	game_mode.set_extent(569000.0, 380000.0, 599000.0, 410000.0)
+
+	var score = GameScore.new()
+	score.name = "Strom PV"
+	score.add_contributor(game_mode.game_object_collections["PV groß"], "MW", 30.0)
+	score.add_contributor(game_mode.game_object_collections["PV klein"], "MW", 10.0)
+	score.target = 69726.0
+
+	var score2 = GameScore.new()
+	score2.name = "Strom WKA"
+	score2.add_contributor(game_mode.game_object_collections["WKA"], "MW")
+	score2.target = 222667.0
+
+	game_mode.add_score(score2)
+	game_mode.add_score(score)
+
+	# Add player game object collection
+	var player_game_object_collection = PlayerGameObjectCollection.new("Players", get_parent().get_node("FirstPersonPC"))
+	game_mode.add_game_object_collection(player_game_object_collection)
+	player_game_object_collection.icon_name = "player_position"
+	player_game_object_collection.desired_shape = "SQUARE_BRICK"
+	player_game_object_collection.desired_color = "GREEN_BRICK"
+
+	GameSystem.current_game_mode = game_mode
+
+
+func validate_gpkg(geopackage_path: String):
 	if geopackage_path.empty():
 		logger.error("User Geopackage path not set! Please set it in user://configuration.ini", LOG_MODULE)
-		return
-
+		return false
+	
 	var file2Check = File.new()
 	if !file2Check.file_exists(geopackage_path):
 		logger.error(
 			"Path to geodataset \"%s\" does not exist, could not load any data!" % [geopackage_path],
 			LOG_MODULE
 		)
-		return
+		return false
 	
 	geopackage = Geodot.get_dataset(geopackage_path)
 	if !geopackage.is_valid():
 		logger.error("Geodataset is not valid, could not load any data!", LOG_MODULE)
-		return
+		return false
+	
+	return true
+
+
+# Digests the information provided by the geopackage
+func digest_gpkg(geopackage_path: String):
+	geopackage = Geodot.get_dataset(geopackage_path)
 	
 	var logstring = "\n"
 	
@@ -128,21 +207,14 @@ func digest_geopackage():
 	
 	db.close_db()
 	logger.info("Closing geopackage as DB ...", LOG_MODULE)
-
-	center = get_avg_center()
+	
+	set_center(get_avg_center())
  
 
 # Load all used geo-layers as defined by configuration
 func get_geolayers(db, gpkg):
-	# Load which gpkg raster layers concern which LL-layers
-	var rasters_config = db.select_rows(
-		"LL_georasterlayer_to_layer", "", ["*"] 
-	).duplicate()
-	
-	# Load which gpkg feature layers concern which LL-layers
-	var features_config = db.select_rows(
-		"LL_geofeaturelayer_to_layer", "", ["*"] 
-	).duplicate()
+	var raster_layers = gpkg.get_raster_layers()
+	var feature_layers = gpkg.get_feature_layers()
 	
 	# Load which external data sources concern which LL-layers
 	var externals_config = db.select_rows(
@@ -151,11 +223,11 @@ func get_geolayers(db, gpkg):
 	
 	var rasters = {}
 	var features = {}
-	for raster_config in rasters_config:
-		rasters[raster_config.geolayer_name] = gpkg.get_raster_layer(raster_config.geolayer_name)
+	for raster in raster_layers:
+		rasters[raster.resource_name] = raster
 	
-	for feature_config in features_config:
-		features[feature_config.geolayer_name] = gpkg.get_feature_layer(feature_config.geolayer_name)
+	for feature in feature_layers:
+		features[feature.resource_name] = feature
 	
 	for external_config in externals_config:
 		var layer = external_layers.external_to_geolayer_from_type(db, external_config)
@@ -322,7 +394,27 @@ func load_object_layer(db, layer_config, geo_layers_config, extended_as: Layer.O
 	else:
 		object_layer.render_info = extended_as
 	
-	object_layer.render_info.object = load(get_extension_by_key(db, "object", layer_config.id))
+	var file_path_object_scene = get_extension_by_key(db, "object", layer_config.id)
+	var object_scene
+	if file_path_object_scene.ends_with(".tscn"):
+		object_scene = load(file_path_object_scene)
+	elif file_path_object_scene.ends_with(".obj"):
+		# Load the material and mesh
+		var material_path = file_path_object_scene.replace(".obj", ".mtl")
+		var mesh = ObjParse.parse_obj(file_path_object_scene, material_path)
+		
+		# Put the resulting mesh into a node
+		var mesh_instance = MeshInstance.new()
+		mesh_instance.mesh = mesh
+		
+		# Pack the node into a scene
+		object_scene = PackedScene.new()
+		object_scene.pack(mesh_instance)
+	else:
+		logger.error("Not a valid format for object-layer!", LOG_MODULE)
+		return FeatureLayer.new()
+		
+	object_layer.render_info.object = object_scene
 	object_layer.render_info.ground_height_layer = get_georasterlayer_by_type(
 		db, "HEIGHT_LAYER", geo_layers_config.rasters)
 	object_layer.ui_info.name_attribute = "Beschreib"

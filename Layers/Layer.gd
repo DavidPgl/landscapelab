@@ -35,6 +35,7 @@ var ui_info = UIInfo.new()
 
 signal visibility_changed(visible)
 signal layer_changed
+signal refresh_view
 
 
 func set_visible_quiet(visible: bool) -> void:
@@ -48,6 +49,16 @@ func is_valid():
 func _set_visible(visible: bool) -> void:
 	is_visible = visible
 	emit_signal("visibility_changed", is_visible)
+
+
+# Implemented by child classes
+func get_path():
+	pass
+
+
+# Implemented by child classes
+func get_name():
+	pass
 
 
 class UIInfo:
@@ -67,9 +78,12 @@ class RenderInfo:
 class BasicTerrainRenderInfo extends RenderInfo:
 	var height_layer: Layer
 	var texture_layer: Layer
+	# Data shading
 	var is_color_shaded: bool
 	var max_color: Color
 	var min_color: Color
+	var max_value: float
+	var min_value: float
 	var alpha: float
 	
 	func get_geolayers():

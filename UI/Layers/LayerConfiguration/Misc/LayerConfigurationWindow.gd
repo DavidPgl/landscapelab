@@ -13,6 +13,7 @@ onready var min_size = rect_min_size
 var RenderTypeObject = {
 	"NONE": Layer,
 	"BASIC_TERRAIN": Layer,
+	"REALISTIC_TERRAIN": Layer,
 	"PARTICLES": RasterLayer,
 	"OBJECT": FeatureLayer,
 	"PATH": FeatureLayer,
@@ -24,7 +25,6 @@ var RenderTypeObject = {
 
 func _ready():
 	connect("confirmed", self, "_on_confirm")
-	connect("resized", self, "_on_resize")
 	type_chooser.connect("item_selected", self, "_on_type_select")
 	
 	_add_types()
@@ -32,8 +32,8 @@ func _ready():
 
 # Use this function instead of popup to also fill the according layer properties.
 # If the layer is not set, the popup will handle the configuration as a new layer.
-func layer_popup(rect: Rect2, existing_layer: Layer = null):
-	popup(rect)
+func layer_popup(min_size: Vector2, existing_layer: Layer = null):
+	popup_centered(min_size)
 	layer = existing_layer
 	
 	if layer != null:
@@ -43,9 +43,7 @@ func layer_popup(rect: Rect2, existing_layer: Layer = null):
 		# FIXME: this probably should not be done like this anyways so we should fix this
 		var type_string: String = layer.RenderType.keys()[layer.render_type]
 		type_string = type_string.substr(0, 1) + type_string.substr(1).to_lower()
-		specific_layer_ui = load("res://UI/Layers/LayerConfiguration/SpecificLayerUI/%sLayer.tscn" % type_string).instance()
-		container.add_child(specific_layer_ui)
-		container.move_child(specific_layer_ui, 1)
+		_add_specific_layer_conf(type_string)
 
 
 func _on_confirm():
@@ -72,17 +70,15 @@ func _on_confirm():
 		Layers.add_layer(layer)
 	else:
 		layer.emit_signal("layer_changed")
+		layer.emit_signal("refresh_view")
 	
 	hide()
 
 
 func resize(add: Vector2):
-	rect_min_size = min_size + add
+	rect_min_size.y = min_size.y + add.y
+	rect_min_size.x = max(add.x, min_size.x) 
 	rect_size = rect_min_size
-
-
-func _on_resize():
-	container.rect_size.x = rect_size.x - 75
 
 
 func _add_types():
@@ -101,8 +97,17 @@ func _on_type_select(idx: int):
 	if specific_layer_ui != null:
 		container.remove_child(specific_layer_ui)
 	
-	specific_layer_ui = load("res://UI/Layers/LayerConfiguration/SpecificLayerUI/%sLayer.tscn" % type).instance()
+	_add_specific_layer_conf(type)
+
+
+func _add_specific_layer_conf(type_string: String):
+	specific_layer_ui = load(
+			"res://UI/Layers/LayerConfiguration/SpecificLayerUI/%sLayer.tscn" 
+			% type_string).instance()
+	
+	if layer: specific_layer_ui.init(layer)
+	
 	container.add_child(specific_layer_ui)
 	container.move_child(specific_layer_ui, 1)
 	
-	resize(Vector2(0, specific_layer_ui.rect_size.y))
+	specific_layer_ui.connect("new_size", self, "resize")
