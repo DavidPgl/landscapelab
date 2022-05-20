@@ -123,14 +123,18 @@ material/0 = SubResource( 4 )
 
 [node name="Intersections" type="Spatial" parent="."]
 
-[node name="TerrainLOD0" parent="." instance=ExtResource( 3 )]
+[node name="LODs" type="Spatial" parent="."]
+
+[node name="TerrainLOD0" parent="LODs" instance=ExtResource( 3 )]
 material_override = SubResource( 5 )
+skeleton = NodePath("../..")
 inner_mesh = ExtResource( 2 )
 is_inner = true
 size = 150.0
 
-[node name="TerrainLOD1" parent="." instance=ExtResource( 3 )]
+[node name="TerrainLOD1" parent="LODs" instance=ExtResource( 3 )]
 material_override = SubResource( 7 )
+skeleton = NodePath("../..")
 ring_mesh = ExtResource( 5 )
 size = 750.0
 heightmap_resolution = 500
@@ -139,8 +143,9 @@ landuse_resolution = 250
 load_detail_textures = true
 load_fade_textures = true
 
-[node name="TerrainLOD2" parent="." instance=ExtResource( 3 )]
+[node name="TerrainLOD2" parent="LODs" instance=ExtResource( 3 )]
 material_override = SubResource( 8 )
+skeleton = NodePath("../..")
 ring_mesh = ExtResource( 5 )
 size = 3750.0
 heightmap_resolution = 500
@@ -148,8 +153,9 @@ ortho_resolution = 1500
 landuse_resolution = 1250
 load_fade_textures = true
 
-[node name="TerrainLOD3" parent="." instance=ExtResource( 3 )]
+[node name="TerrainLOD3" parent="LODs" instance=ExtResource( 3 )]
 material_override = SubResource( 9 )
+skeleton = NodePath("../..")
 ring_mesh = ExtResource( 5 )
 size = 18750.0
 heightmap_resolution = 500

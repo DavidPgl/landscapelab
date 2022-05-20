@@ -45,10 +45,9 @@ var terrain_renderer: RealisticTerrainRenderer
 
 
 func _ready():
-	$TerrainLOD0.height_layer = layer.render_info.ground_height_layer
-	$TerrainLOD1.height_layer = layer.render_info.ground_height_layer
-	$TerrainLOD2.height_layer = layer.render_info.ground_height_layer
-	$TerrainLOD3.height_layer = layer.render_info.ground_height_layer
+	if debug_draw_mesh:
+		for lod in $LODs.get_children():
+			lod.height_layer = layer.render_info.ground_height_layer
 	
 	height_correction_image.create(mesh_size, mesh_size, false, Image.FORMAT_RF)
 	height_correction_texture.storage = ImageTexture.STORAGE_RAW
@@ -68,21 +67,10 @@ func _ready():
 # Runs in a thread!
 func load_new_data():
 	if debug_draw_mesh:
-		$TerrainLOD0.position_x = center[0]
-		$TerrainLOD0.position_y = center[1]
-		$TerrainLOD0.build()
-		
-		$TerrainLOD1.position_x = center[0]
-		$TerrainLOD1.position_y = center[1]
-		$TerrainLOD1.build()
-		
-		$TerrainLOD2.position_x = center[0]
-		$TerrainLOD2.position_y = center[1]
-		$TerrainLOD2.build()
-		
-		$TerrainLOD3.position_x = center[0]
-		$TerrainLOD3.position_y = center[1]
-		$TerrainLOD3.build()
+		for lod in $LODs.get_children():
+			lod.position_x = center[0]
+			lod.position_y = center[1]
+			lod.build()
 	
 	var road_network_info: Layer.RoadNetworkRenderInfo = layer.render_info
 	var road_features = road_network_info.road_layer.get_features_near_position(center[0], center[1], radius, max_features)
@@ -119,11 +107,9 @@ func load_new_data():
 # OVERRIDE #
 func apply_new_data():
 	if debug_draw_mesh:
-		$TerrainLOD0.height_correction_texture = height_correction_texture
-		$TerrainLOD0.apply_textures()
-		$TerrainLOD1.apply_textures()
-		$TerrainLOD2.apply_textures()
-		$TerrainLOD3.apply_textures()
+		$LODs/TerrainLOD0.height_correction_texture = height_correction_texture
+		for lod in $LODs.get_children():
+			lod.apply_textures()
 	
 	if debug_draw_points:
 		for child in $Debug.get_children():
