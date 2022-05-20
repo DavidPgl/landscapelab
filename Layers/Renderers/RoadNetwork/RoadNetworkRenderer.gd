@@ -16,7 +16,7 @@ export(bool) var debug_draw_points: bool = false
 export(bool) var debug_draw_mesh: bool = false
 
 
-const radius = 200
+const radius = 500
 const max_features = 100000
 
 const mesh_size: float = 150.0
@@ -34,7 +34,6 @@ const lod_sample_rates: Array = [
 # Road id to road instance
 var roads: Dictionary = {}
 var roads_to_add: Dictionary = {}
-var roads_to_delete: Array = []
 var debug_points: Array = []
 
 var height_correction_data: PoolByteArray
@@ -131,20 +130,13 @@ func apply_new_data():
 			child.queue_free()
 		for point in debug_points:
 			$Debug.add_child(point)
+		debug_points.clear()
 	
 	
 	# Remove old objects
 	for road in $Roads.get_children():
-		var road_id: int = int(road.name)
-		if roads_to_delete.has(road_id):
-			roads.erase(road_id)
-			road.queue_free()
-		# TODO: This check should not be necessary!
-		# Move objects that stay
-		elif roads.has(road_id):
-			var curve: Curve3D = roads[road_id].curve
-			for index in curve.get_point_count():
-				curve.set_point_position(index, curve.get_point_position(index) - Vector3(shift[0], 0, shift[1]))
+		road.queue_free()
+	roads.clear()
 	
 	# Add new objects
 	for road_id in roads_to_add.keys():
@@ -153,19 +145,12 @@ func apply_new_data():
 		$Roads.add_child(road)
 		road.apply_attributes()
 		roads[road_id] = road
-	
 	roads_to_add.clear()
-	roads_to_delete = roads.keys()
-	debug_points.clear()
 
 
 # Creates new road instances and splits the underlying Curve3D depending on ground height mesh
 func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	var road_id: int = int(road_feature.get_attribute("edge_id"))
-	# If road already exists, skip and remove it from to-delete
-	if roads.has(road_id):
-		roads_to_delete.erase(road_id)
-		return
 	
 	# Create Road instance
 	var road_instance = road_instance_scene.instance()
