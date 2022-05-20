@@ -16,7 +16,7 @@ export(bool) var debug_draw_points: bool = false
 export(bool) var debug_draw_mesh: bool = false
 
 
-const radius = 500
+const radius = 200
 const max_features = 100000
 
 const mesh_size: float = 150.0
@@ -43,17 +43,19 @@ var height_correction_texture: ImageTexture = ImageTexture.new()
 
 var terrain_renderer: RealisticTerrainRenderer
 
+var roads_deleted: bool = false
+
 
 func _ready():
 	if debug_draw_mesh:
 		for lod in $LODs.get_children():
 			lod.height_layer = layer.render_info.ground_height_layer
 	
-	height_correction_image.create(mesh_size, mesh_size, false, Image.FORMAT_RF)
-	height_correction_texture.storage = ImageTexture.STORAGE_RAW
-	height_correction_texture.create_from_image(height_correction_image, Image.FORMAT_RF)
+	#height_correction_image.create(mesh_size, mesh_size, false, Image.FORMAT_RF)
+	#height_correction_texture.storage = ImageTexture.STORAGE_RAW
+	#height_correction_texture.create_from_image(height_correction_image, Image.FORMAT_RF)
 	
-	height_correction_data.resize(mesh_size * mesh_size * 4)
+	#height_correction_data.resize(mesh_size * mesh_size * 4)
 	
 	# TODO: Replace with better access
 	# Find and get terrain renderer
@@ -63,9 +65,26 @@ func _ready():
 			return
 
 
+func _process(delta):
+	if not roads_deleted:
+		return
+	
+	# Add new objects
+	if not roads_to_add.empty():
+		var road_id = roads_to_add.keys()[0]
+		var road = roads_to_add[road_id]
+		road.name = str(road_id)
+		$Roads.add_child(road)
+		road.apply_attributes()
+		roads[road_id] = road
+		roads_to_add.erase(road_id)
+
+
 # OVERRIDE #
 # Runs in a thread!
 func load_new_data():
+	roads_deleted = false
+	
 	if debug_draw_mesh:
 		for lod in $LODs.get_children():
 			lod.position_x = center[0]
@@ -77,9 +96,10 @@ func load_new_data():
 	var intersection_features = road_network_info.intersection_layer.get_features_near_position(center[0], center[1], radius, max_features)
 
 	# Reset corrections
-	for i in range(mesh_size * mesh_size * 4):
-		height_correction_data[i] = 0
+	#for i in range(mesh_size * mesh_size * 4):
+	#	height_correction_data[i] = 0
 	
+	roads_to_add.clear()
 	
 	for road in road_features:
 		_create_road(road, road_network_info.road_instance_scene)
@@ -90,18 +110,18 @@ func load_new_data():
 			var point: Vector3 = curve.get_point_position(index)
 			point -= Vector3(shift[0], 0, shift[1])
 			# Get points on other axis
-			_set_correction_heights(point, sample_rate, road.width)
+			#_set_correction_heights(point, sample_rate, road.width)
 	
 	for road in roads_to_add.values():
 		var curve: Curve3D = road.curve
 		for index in curve.get_point_count():
 			var point: Vector3 = curve.get_point_position(index)
 			# Get points on other axis
-			_set_correction_heights(point, sample_rate, road.width)
+			#_set_correction_heights(point, sample_rate, road.width)
 	
-	height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
-	height_correction_texture.set_data(height_correction_image)
-	terrain_renderer.set_height_correction_texture(height_correction_texture)
+	#height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
+	#height_correction_texture.set_data(height_correction_image)
+	#terrain_renderer.set_height_correction_texture(height_correction_texture)
 
 
 # OVERRIDE #
@@ -124,14 +144,7 @@ func apply_new_data():
 		road.queue_free()
 	roads.clear()
 	
-	# Add new objects
-	for road_id in roads_to_add.keys():
-		var road = roads_to_add[road_id]
-		road.name = str(road_id)
-		$Roads.add_child(road)
-		road.apply_attributes()
-		roads[road_id] = road
-	roads_to_add.clear()
+	roads_deleted = true
 
 
 # Creates new road instances and splits the underlying Curve3D depending on ground height mesh
