@@ -16,18 +16,19 @@ export(bool) var debug_draw_points: bool = false
 export(bool) var debug_draw_mesh: bool = false
 
 
-const radius = 200
-const max_features = 100000
+const radius = 50
+const max_features = 5
 
 const mesh_size: float = 150.0
 const mesh_resolution: float = 100.0
 const sample_rate: float = mesh_size / mesh_resolution
 
 const lod_sample_rates: Array = [
-	150 / mesh_size,
-	750 / mesh_size,
-	3750 / mesh_size,
-	18750 / mesh_size
+	150 / mesh_resolution,
+	750 / mesh_resolution,
+	3750 / mesh_resolution,
+	18750 / mesh_resolution,
+	18750 / mesh_resolution
 ]
 
 
@@ -83,6 +84,11 @@ func _process(delta):
 # OVERRIDE #
 # Runs in a thread!
 func load_new_data():
+	pass
+
+
+# OVERRIDE #
+func apply_new_data():
 	roads_deleted = false
 	
 	if debug_draw_mesh:
@@ -122,10 +128,8 @@ func load_new_data():
 	#height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
 	#height_correction_texture.set_data(height_correction_image)
 	#terrain_renderer.set_height_correction_texture(height_correction_texture)
-
-
-# OVERRIDE #
-func apply_new_data():
+	
+	
 	if debug_draw_mesh:
 		$LODs/TerrainLOD0.height_correction_texture = height_correction_texture
 		for lod in $LODs.get_children():
@@ -202,9 +206,42 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	
 	# Go through each road edge
 	for i in range(curve_point_count - 1):
-		var current_point = road_curve.get_point_position(current_point_index)
-		var next_point = road_curve.get_point_position(current_point_index + 1)
-	
+		var current_point: Vector3 = road_curve.get_point_position(current_point_index)
+		var next_point: Vector3 = road_curve.get_point_position(current_point_index + 1)
+		
+		# Get the LOD
+		var current_lod: int = 0
+		var lod_size: float
+		for j in range(4):
+			lod_size = 150 * pow(5, j)
+			if abs(current_point.x) <= lod_size / 2 and abs(current_point.z) <= lod_size / 2:
+				# If moving to center, use next lod for sample rate
+				if abs(next_point.x) <= lod_size / 2 and abs(next_point.z) <= lod_size / 2 and \
+				Vector2(current_point.x, current_point.z).length_squared() >= Vector2(next_point.x, next_point.z).length_squared():
+					lod_size = 150 * pow(5, j + 1)
+					current_lod += 1
+				break
+			current_lod += 1
+		
+		
+		var sample_rate = lod_sample_rates[current_lod]
+		var shift = Vector3(lod_size / 2, 0, lod_size / 2)
+		# Get intersections with LOD grid
+		var lod_x_grid_point = _get_x_grid_intersection(current_point - shift, next_point - shift, lod_size)
+		var lod_z_grid_point = _get_z_grid_intersection(current_point - shift, next_point - shift, lod_size)
+		
+		# Add LOD grid intersection as point
+		if lod_x_grid_point != null or lod_z_grid_point != null:
+			if lod_z_grid_point == null || (lod_x_grid_point != null && current_point.distance_squared_to(lod_x_grid_point) <= current_point.distance_squared_to(lod_z_grid_point)):
+				lod_x_grid_point += shift
+				road_curve.add_point(lod_x_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				next_point = lod_x_grid_point
+			else:
+				lod_z_grid_point += shift
+				road_curve.add_point(lod_z_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				next_point = lod_z_grid_point
+			i -= 1
+		
 		var x_grid_point = null
 		var z_grid_point = null
 		while true:

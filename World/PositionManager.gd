@@ -26,8 +26,8 @@ var _center_node_velocity := Vector2.ZERO
 var world_shift_check_period: float = 0.5
 var world_shift_timer: float = 0
 
-var standing_shift_limit := 5.0
-var moving_shift_limit := 400.0
+var standing_shift_limit := 50000.0
+var moving_shift_limit := 40000.0
 
 var height = 100
 

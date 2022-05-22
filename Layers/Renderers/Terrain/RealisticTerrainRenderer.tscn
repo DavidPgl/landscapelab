@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=2]
+[gd_scene load_steps=34 format=2]
 
 [ext_resource path="res://Layers/Renderers/Terrain/TerrainLOD.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Layers/Renderers/Terrain/Materials/TerrainShader.shader" type="Shader" id=2]
@@ -29,33 +29,33 @@ shader_param/ortho_saturation = 1.2
 shader_param/ortho_blue_shift_factor = 0.9
 shader_param/size = null
 
-[sub_resource type="OpenSimplexNoise" id=2]
+[sub_resource type="OpenSimplexNoise" id=17]
 seed = 2066020070
 
-[sub_resource type="NoiseTexture" id=3]
+[sub_resource type="NoiseTexture" id=18]
 seamless = true
-noise = SubResource( 2 )
+noise = SubResource( 17 )
 
-[sub_resource type="OpenSimplexNoise" id=4]
+[sub_resource type="OpenSimplexNoise" id=19]
 seed = -1312041339
 
-[sub_resource type="NoiseTexture" id=5]
+[sub_resource type="NoiseTexture" id=20]
 seamless = true
-noise = SubResource( 4 )
+noise = SubResource( 19 )
 
-[sub_resource type="OpenSimplexNoise" id=6]
+[sub_resource type="OpenSimplexNoise" id=21]
 
-[sub_resource type="NoiseTexture" id=7]
-seamless = true
-as_normalmap = true
-noise = SubResource( 6 )
-
-[sub_resource type="OpenSimplexNoise" id=8]
-
-[sub_resource type="NoiseTexture" id=9]
+[sub_resource type="NoiseTexture" id=22]
 seamless = true
 as_normalmap = true
-noise = SubResource( 8 )
+noise = SubResource( 21 )
+
+[sub_resource type="OpenSimplexNoise" id=23]
+
+[sub_resource type="NoiseTexture" id=24]
+seamless = true
+as_normalmap = true
+noise = SubResource( 23 )
 
 [sub_resource type="ShaderMaterial" id=10]
 shader = ExtResource( 6 )
@@ -69,10 +69,10 @@ shader_param/wave_strengh = Vector2( 0.5, 0.25 )
 shader_param/wave_frequency = Vector2( 12, 12 )
 shader_param/time_factor = Vector2( 1, 2 )
 shader_param/offset_noise = ExtResource( 8 )
-shader_param/noise1 = SubResource( 3 )
-shader_param/noise2 = SubResource( 5 )
-shader_param/normalmap = SubResource( 7 )
-shader_param/normalmap2 = SubResource( 9 )
+shader_param/noise1 = SubResource( 18 )
+shader_param/noise2 = SubResource( 20 )
+shader_param/normalmap = SubResource( 22 )
+shader_param/normalmap2 = SubResource( 24 )
 
 [sub_resource type="ShaderMaterial" id=11]
 resource_local_to_scene = true
@@ -93,6 +93,34 @@ shader_param/ortho_saturation = 1.2
 shader_param/ortho_blue_shift_factor = 0.9
 shader_param/size = null
 
+[sub_resource type="OpenSimplexNoise" id=2]
+seed = 2066020070
+
+[sub_resource type="NoiseTexture" id=25]
+seamless = true
+noise = SubResource( 2 )
+
+[sub_resource type="OpenSimplexNoise" id=4]
+seed = -1312041339
+
+[sub_resource type="NoiseTexture" id=26]
+seamless = true
+noise = SubResource( 4 )
+
+[sub_resource type="OpenSimplexNoise" id=6]
+
+[sub_resource type="NoiseTexture" id=27]
+seamless = true
+as_normalmap = true
+noise = SubResource( 6 )
+
+[sub_resource type="OpenSimplexNoise" id=8]
+
+[sub_resource type="NoiseTexture" id=28]
+seamless = true
+as_normalmap = true
+noise = SubResource( 8 )
+
 [sub_resource type="ShaderMaterial" id=12]
 shader = ExtResource( 6 )
 shader_param/size = null
@@ -105,10 +133,10 @@ shader_param/wave_strengh = Vector2( 0.5, 0.25 )
 shader_param/wave_frequency = Vector2( 12, 12 )
 shader_param/time_factor = Vector2( 1, 2 )
 shader_param/offset_noise = ExtResource( 8 )
-shader_param/noise1 = SubResource( 3 )
-shader_param/noise2 = SubResource( 5 )
-shader_param/normalmap = SubResource( 7 )
-shader_param/normalmap2 = SubResource( 9 )
+shader_param/noise1 = SubResource( 25 )
+shader_param/noise2 = SubResource( 26 )
+shader_param/normalmap = SubResource( 27 )
+shader_param/normalmap2 = SubResource( 28 )
 
 [sub_resource type="ShaderMaterial" id=13]
 resource_local_to_scene = true
@@ -141,10 +169,10 @@ shader_param/wave_strengh = Vector2( 0.5, 0.25 )
 shader_param/wave_frequency = Vector2( 12, 12 )
 shader_param/time_factor = Vector2( 1, 2 )
 shader_param/offset_noise = ExtResource( 8 )
-shader_param/noise1 = SubResource( 3 )
-shader_param/noise2 = SubResource( 5 )
-shader_param/normalmap = SubResource( 7 )
-shader_param/normalmap2 = SubResource( 9 )
+shader_param/noise1 = SubResource( 25 )
+shader_param/noise2 = SubResource( 26 )
+shader_param/normalmap = SubResource( 27 )
+shader_param/normalmap2 = SubResource( 28 )
 
 [sub_resource type="ShaderMaterial" id=15]
 resource_local_to_scene = true
@@ -177,10 +205,10 @@ shader_param/wave_strengh = Vector2( 0.5, 0.25 )
 shader_param/wave_frequency = Vector2( 12, 12 )
 shader_param/time_factor = Vector2( 1, 2 )
 shader_param/offset_noise = ExtResource( 8 )
-shader_param/noise1 = SubResource( 3 )
-shader_param/noise2 = SubResource( 5 )
-shader_param/normalmap = SubResource( 7 )
-shader_param/normalmap2 = SubResource( 9 )
+shader_param/noise1 = SubResource( 25 )
+shader_param/noise2 = SubResource( 26 )
+shader_param/normalmap = SubResource( 27 )
+shader_param/normalmap2 = SubResource( 28 )
 
 [node name="RealisticTerrainRenderer" type="Spatial"]
 script = ExtResource( 4 )

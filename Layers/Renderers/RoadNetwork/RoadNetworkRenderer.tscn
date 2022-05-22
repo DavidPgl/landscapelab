@@ -140,8 +140,6 @@ size = 750.0
 heightmap_resolution = 500
 ortho_resolution = 1500
 landuse_resolution = 250
-load_detail_textures = true
-load_fade_textures = true
 
 [node name="TerrainLOD2" parent="LODs" instance=ExtResource( 3 )]
 material_override = SubResource( 8 )
@@ -151,7 +149,6 @@ size = 3750.0
 heightmap_resolution = 500
 ortho_resolution = 1500
 landuse_resolution = 1250
-load_fade_textures = true
 
 [node name="TerrainLOD3" parent="LODs" instance=ExtResource( 3 )]
 material_override = SubResource( 9 )

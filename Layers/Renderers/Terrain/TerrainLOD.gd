@@ -106,16 +106,18 @@ func build():
 		if current_ortho_image.is_valid():
 			current_texture = current_ortho_image.get_image_texture()
 	
-	var current_landuse_image = landuse_layer.get_image(
-		top_left_x,
-		top_left_y,
-		size,
-		landuse_resolution,
-		0
-	)
+	var current_landuse_image
+	if landuse_layer:
+		current_landuse_image = landuse_layer.get_image(
+			top_left_x,
+			top_left_y,
+			size,
+			landuse_resolution,
+			0
+		)
 	
-	if current_landuse_image.is_valid():
-		current_landuse = current_landuse_image.get_image_texture()
+		if current_landuse_image.is_valid():
+			current_landuse = current_landuse_image.get_image_texture()
 	
 	# Surface Height
 	if surface_height_layer:
