@@ -9,15 +9,15 @@ class_name RoadNetworkRenderer
 # speed_forward		- Max speed in road direction
 # speed_backwards	- Max speed in opposite direction
 # lanes_forward		- Number of lanes in road direction
-# lanes_backwards	- Number of lanes in opposite direction
+# lanes_backwards	- Number of lanes in opposite directio
 # direction			- 2 both, 1 edge direction, 0 opposite to edge direction, -1 unknown
 
 export(bool) var debug_draw_points: bool = false
 export(bool) var debug_draw_mesh: bool = false
 
 
-const radius = 50
-const max_features = 5
+const radius = 2000
+const max_features = 50000
 
 const mesh_size: float = 150.0
 const mesh_resolution: float = 100.0
@@ -27,14 +27,13 @@ const lod_sample_rates: Array = [
 	150 / mesh_resolution,
 	750 / mesh_resolution,
 	3750 / mesh_resolution,
-	18750 / mesh_resolution,
 	18750 / mesh_resolution
 ]
 
+var roads_parent: Node
 
 # Road id to road instance
 var roads: Dictionary = {}
-var roads_to_add: Dictionary = {}
 var debug_points: Array = []
 
 var height_correction_data: PoolByteArray
@@ -43,8 +42,6 @@ var height_correction_image: Image = Image.new()
 var height_correction_texture: ImageTexture = ImageTexture.new()
 
 var terrain_renderer: RealisticTerrainRenderer
-
-var roads_deleted: bool = false
 
 
 func _ready():
@@ -66,31 +63,9 @@ func _ready():
 			return
 
 
-func _process(delta):
-	if not roads_deleted:
-		return
-	
-	# Add new objects
-	if not roads_to_add.empty():
-		var road_id = roads_to_add.keys()[0]
-		var road = roads_to_add[road_id]
-		road.name = str(road_id)
-		$Roads.add_child(road)
-		road.apply_attributes()
-		roads[road_id] = road
-		roads_to_add.erase(road_id)
-
-
 # OVERRIDE #
 # Runs in a thread!
 func load_new_data():
-	pass
-
-
-# OVERRIDE #
-func apply_new_data():
-	roads_deleted = false
-	
 	if debug_draw_mesh:
 		for lod in $LODs.get_children():
 			lod.position_x = center[0]
@@ -105,8 +80,8 @@ func apply_new_data():
 	#for i in range(mesh_size * mesh_size * 4):
 	#	height_correction_data[i] = 0
 	
-	roads_to_add.clear()
-	
+	roads_parent = Node.new()
+	roads_parent.name = "Roads"
 	for road in road_features:
 		_create_road(road, road_network_info.road_instance_scene)
 	
@@ -118,16 +93,20 @@ func apply_new_data():
 			# Get points on other axis
 			#_set_correction_heights(point, sample_rate, road.width)
 	
-	for road in roads_to_add.values():
-		var curve: Curve3D = road.curve
-		for index in curve.get_point_count():
-			var point: Vector3 = curve.get_point_position(index)
+	#for road in roads_to_add.values():
+	#	var curve: Curve3D = road.curve
+	#	for index in curve.get_point_count():
+	#		var point: Vector3 = curve.get_point_position(index)
 			# Get points on other axis
 			#_set_correction_heights(point, sample_rate, road.width)
 	
 	#height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
 	#height_correction_texture.set_data(height_correction_image)
 	#terrain_renderer.set_height_correction_texture(height_correction_texture)
+
+
+# OVERRIDE #
+func apply_new_data():
 	
 	
 	if debug_draw_mesh:
@@ -144,11 +123,10 @@ func apply_new_data():
 	
 	
 	# Remove old objects
-	for road in $Roads.get_children():
-		road.queue_free()
+	$Roads.free()
 	roads.clear()
 	
-	roads_deleted = true
+	add_child(roads_parent)
 
 
 # Creates new road instances and splits the underlying Curve3D depending on ground height mesh
@@ -204,22 +182,25 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	var current_point_index: int = 0
 	var curve_point_count = road_curve.get_point_count()
 	
+	var lod_x_grid_point
+	var lod_z_grid_point
 	# Go through each road edge
-	for i in range(curve_point_count - 1):
+	var i: int = 0
+	while(i < curve_point_count - 1):
 		var current_point: Vector3 = road_curve.get_point_position(current_point_index)
 		var next_point: Vector3 = road_curve.get_point_position(current_point_index + 1)
 		
 		# Get the LOD
 		var current_lod: int = 0
-		var lod_size: float
+		var lod_size: float = 0
 		for j in range(4):
 			lod_size = 150 * pow(5, j)
-			if abs(current_point.x) <= lod_size / 2 and abs(current_point.z) <= lod_size / 2:
-				# If moving to center, use next lod for sample rate
-				if abs(next_point.x) <= lod_size / 2 and abs(next_point.z) <= lod_size / 2 and \
-				Vector2(current_point.x, current_point.z).length_squared() >= Vector2(next_point.x, next_point.z).length_squared():
-					lod_size = 150 * pow(5, j + 1)
+			if (current_point == lod_x_grid_point or current_point == lod_z_grid_point) and\
+				(abs(next_point.x) > lod_size / 2 or abs(next_point.z) > lod_size / 2):
 					current_lod += 1
+					break
+			elif abs(current_point.x) <= lod_size / 2 and abs(current_point.z) <= lod_size / 2:
+				lod_size = 150 * pow(5, max(0, j - 1))
 				break
 			current_lod += 1
 		
@@ -227,20 +208,63 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		var sample_rate = lod_sample_rates[current_lod]
 		var shift = Vector3(lod_size / 2, 0, lod_size / 2)
 		# Get intersections with LOD grid
-		var lod_x_grid_point = _get_x_grid_intersection(current_point - shift, next_point - shift, lod_size)
-		var lod_z_grid_point = _get_z_grid_intersection(current_point - shift, next_point - shift, lod_size)
+		lod_x_grid_point = _get_x_grid_intersection(current_point - shift, next_point - shift, lod_size)
+		lod_z_grid_point = _get_z_grid_intersection(current_point - shift, next_point - shift, lod_size)
 		
 		# Add LOD grid intersection as point
 		if lod_x_grid_point != null or lod_z_grid_point != null:
-			if lod_z_grid_point == null || (lod_x_grid_point != null && current_point.distance_squared_to(lod_x_grid_point) <= current_point.distance_squared_to(lod_z_grid_point)):
+			if lod_z_grid_point == null || (lod_x_grid_point != null && current_point.distance_squared_to(lod_x_grid_point + shift) <= current_point.distance_squared_to(lod_z_grid_point + shift)):
 				lod_x_grid_point += shift
+				
+				var x_grid = floor(lod_x_grid_point.x / sample_rate)
+				var z_grid = floor(lod_x_grid_point.z / sample_rate)
+
+				var P1 = Vector3(x_grid * sample_rate, 0, z_grid * sample_rate)
+				var P2 = Vector3(x_grid * sample_rate, 0, (z_grid + 1) * sample_rate)
+				
+				var p1_height = _get_ground_height(P1)
+				var p2_height = _get_ground_height(P2)
+				
+				var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, lod_x_grid_point)
+				
+				var height = p1_height * (1 - weight) + p2_height * weight
+				lod_x_grid_point.y = height
+				
 				road_curve.add_point(lod_x_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				next_point = lod_x_grid_point
+				
+				if debug_draw_points:
+					var debug_point: MeshInstance = $Debug_Point_Intersect_LOD.duplicate()
+					debug_point.transform.origin = lod_x_grid_point
+					debug_points.append(debug_point)
+				
 			else:
 				lod_z_grid_point += shift
+				
+				var x_grid = floor(lod_z_grid_point.x / sample_rate)
+				var z_grid = floor(lod_z_grid_point.z / sample_rate)
+
+				var P1 = Vector3(x_grid * sample_rate, 0, z_grid * sample_rate)
+				var P2 = Vector3(x_grid * sample_rate, 0, (z_grid + 1) * sample_rate)
+				
+				var p1_height = _get_ground_height(P1)
+				var p2_height = _get_ground_height(P2)
+				
+				var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, lod_z_grid_point)
+				
+				var height = p1_height * (1 - weight) + p2_height * weight
+				lod_z_grid_point.y = height
+				
 				road_curve.add_point(lod_z_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				next_point = lod_z_grid_point
+				
+				if debug_draw_points:
+					var debug_point: MeshInstance = $Debug_Point_Intersect_LOD.duplicate()
+					debug_point.transform.origin = lod_z_grid_point
+					debug_points.append(debug_point)
 			i -= 1
+		
+		i += 1
 		
 		var x_grid_point = null
 		var z_grid_point = null
@@ -336,14 +360,12 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				debug_point.transform.origin = current_point
 				debug_points.append(debug_point)
 	
+	
 	road_instance.curve = road_curve
-	
-	
 	road_instance.width = road_width
 	
 	# TODO: Add other road info to road instance
-	
-	roads_to_add[road_id] = road_instance
+	roads_parent.add_child(road_instance)
 
 # Moves the given vector to the ground and returns it
 func _move_to_ground_height(vector: Vector3) -> Vector3:
