@@ -13,6 +13,7 @@ render_priority = 1
 albedo_color = Color( 0.235294, 0.235294, 0.235294, 1 )
 
 [node name="RoadInstance" type="Path"]
+visible = false
 curve = SubResource( 1 )
 script = ExtResource( 1 )
 
@@ -24,7 +25,7 @@ mode = 2
 path_node = NodePath("..")
 path_interval_type = 0
 path_interval = 1.0
-path_simplify_angle = 2.0
+path_simplify_angle = 0.0
 path_rotation = 1
 path_local = false
 path_continuous_u = false

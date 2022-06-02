@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=2]
+[gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://Layers/Renderers/RoadNetwork/RoadNetworkRenderer.gd" type="Script" id=1]
 [ext_resource path="res://Layers/Renderers/Terrain/lod_mesh_full_wireframe.obj" type="ArrayMesh" id=2]
@@ -7,7 +7,7 @@
 [ext_resource path="res://Layers/Renderers/Terrain/lod_mesh_hole_wireframe.obj" type="ArrayMesh" id=5]
 
 [sub_resource type="CubeMesh" id=1]
-size = Vector3( 0.5, 1, 0.5 )
+size = Vector3( 0.5, 0.2, 0.5 )
 
 [sub_resource type="SpatialMaterial" id=6]
 albedo_color = Color( 1, 0, 1, 1 )
@@ -23,6 +23,9 @@ albedo_color = Color( 0, 0, 1, 1 )
 
 [sub_resource type="SpatialMaterial" id=10]
 albedo_color = Color( 1, 0.478431, 0, 1 )
+
+[sub_resource type="SpatialMaterial" id=11]
+albedo_color = Color( 0.419608, 0, 1, 1 )
 
 [sub_resource type="ShaderMaterial" id=5]
 resource_local_to_scene = true
@@ -102,6 +105,8 @@ shader_param/size = null
 
 [node name="RoadNetworkRenderer" type="Spatial"]
 script = ExtResource( 1 )
+debug_draw_points = true
+debug_draw_mesh = true
 
 [node name="Debug_Point_Start" type="MeshInstance" parent="."]
 mesh = SubResource( 1 )
@@ -123,6 +128,10 @@ material/0 = SubResource( 4 )
 mesh = SubResource( 1 )
 material/0 = SubResource( 10 )
 
+[node name="Debug_Point_Interpolation" type="MeshInstance" parent="."]
+mesh = SubResource( 1 )
+material/0 = SubResource( 11 )
+
 [node name="Debug" type="Spatial" parent="."]
 
 [node name="Roads" type="Spatial" parent="."]
@@ -143,7 +152,6 @@ material_override = SubResource( 7 )
 skeleton = NodePath("../..")
 ring_mesh = ExtResource( 5 )
 size = 750.0
-heightmap_resolution = 500
 ortho_resolution = 1500
 landuse_resolution = 250
 
@@ -152,7 +160,6 @@ material_override = SubResource( 8 )
 skeleton = NodePath("../..")
 ring_mesh = ExtResource( 5 )
 size = 3750.0
-heightmap_resolution = 500
 ortho_resolution = 1500
 landuse_resolution = 1250
 
@@ -161,5 +168,4 @@ material_override = SubResource( 9 )
 skeleton = NodePath("../..")
 ring_mesh = ExtResource( 5 )
 size = 18750.0
-heightmap_resolution = 500
 landuse_resolution = 1250

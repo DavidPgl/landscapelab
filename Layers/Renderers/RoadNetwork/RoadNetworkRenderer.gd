@@ -21,7 +21,6 @@ const max_features = 50000
 
 const mesh_size: float = 150.0
 const mesh_resolution: float = 100.0
-const sample_rate: float = mesh_size / mesh_resolution
 
 const lod_sample_rates: Array = [
 	150 / mesh_resolution,
@@ -107,8 +106,6 @@ func load_new_data():
 
 # OVERRIDE #
 func apply_new_data():
-	
-	
 	if debug_draw_mesh:
 		$LODs/TerrainLOD0.height_correction_texture = height_correction_texture
 		for lod in $LODs.get_children():
@@ -145,6 +142,18 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		road_curve.set_point_tilt(index, 0)
 		
 		var point = road_curve.get_point_position(index)
+		
+		# Get the LOD
+		var current_lod: int = 0
+		var lod_size: float = 0
+		for j in range(4):
+			lod_size = 150 * pow(5, j)
+			if abs(point.x) <= lod_size / 2 and abs(point.z) <= lod_size / 2:
+				break
+			current_lod += 1
+		
+		var sample_rate = lod_sample_rates[current_lod]
+		
 		
 		var x_grid = floor(point.x / sample_rate)
 		var z_grid = floor(point.z / sample_rate)
@@ -195,11 +204,11 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		var lod_size: float = 0
 		for j in range(4):
 			lod_size = 150 * pow(5, j)
-			if (current_point == lod_x_grid_point or current_point == lod_z_grid_point) and\
+			if abs(current_point.x) <= lod_size / 2 and abs(current_point.z) <= lod_size / 2:
+				if (current_point == lod_x_grid_point or current_point == lod_z_grid_point) and\
 				(abs(next_point.x) > lod_size / 2 or abs(next_point.z) > lod_size / 2):
 					current_lod += 1
 					break
-			elif abs(current_point.x) <= lod_size / 2 and abs(current_point.z) <= lod_size / 2:
 				lod_size = 150 * pow(5, max(0, j - 1))
 				break
 			current_lod += 1
@@ -282,13 +291,13 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				
 				var a_height = _get_ground_height(A)
 				var c_height = _get_ground_height(C)
-				
 				var weight: float = RoadNetworkUtil.inverse_lerp_vector(A, C, intersection_point)
 				var height = a_height * (1 - weight) + c_height * weight
-				var point = Vector3(intersection_point.x, height, intersection_point.z)
+				
+				intersection_point.y = height
 				
 				# Add intersection to curve
-				road_curve.add_point(point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
 				current_point_index += 1
 				
 				if debug_draw_points:
@@ -313,7 +322,6 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 					var p2_height = _get_ground_height(P2)
 					
 					var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, x_grid_point)
-					
 					var height = p1_height * (1 - weight) + p2_height * weight
 					
 					x_grid_point.y = height

@@ -92,9 +92,8 @@ vec3 get_normal(vec2 normal_uv_pos) {
 }
 
 void vertex() {
-	// FIXME: Prevents some visual artifacts, but shouldn't be needed
-	VERTEX.y = get_height(UV * 0.99, true);
-	NORMAL = get_normal(UV * 0.99);
+	VERTEX.y = get_height(UV, true);
+	NORMAL = get_normal(UV);
 	
 	world_pos = (WORLD_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_distance = length(world_pos.xz);
@@ -102,14 +101,14 @@ void vertex() {
 	camera_pos = CAMERA_MATRIX[3].xyz;
 	camera_distance = length(world_pos - camera_pos);
 	
-	if (has_surface_heights) {
-		float surface_height_factor = float(world_distance > surface_heights_start_distance);
-		float texture_read = texture(surface_heightmap, UV).r;
-		if (texture_read < 80.0) {
-			// Nodata may be encoded as infinity
-			VERTEX.y += texture_read * height_scale * surface_height_factor;
-		}
-	}
+//	if (has_surface_heights) {
+//		float surface_height_factor = float(world_distance > surface_heights_start_distance);
+//		float texture_read = texture(surface_heightmap, UV).r;
+//		if (texture_read < 80.0) {
+//			// Nodata may be encoded as infinity
+//			VERTEX.y += texture_read * height_scale * surface_height_factor;
+//		}
+//	}
 }
 
 // Decrase or increase the color saturation
