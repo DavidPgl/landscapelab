@@ -59,14 +59,6 @@ vec4 texelGet ( sampler2D tg_tex, ivec2 tg_coord, int tg_lod ) {
 float get_height(vec2 uv) {
 	float height = texture(heightmap, uv).r * height_scale;
 	
-	if(use_correction && has_heightmap_correction) {
-		// Apply correction
-		float correction = texture(heightmap_correction, uv).r;
-		if(correction != 0.0){
-			height = correction;
-		}
-	}
-	
 	// Clamp to prevent weird behavior with extreme nodata values
 	// TODO: Might have to be generalized further to be more robust
 	return clamp(height, -1000.0, 50000.0);
@@ -78,17 +70,17 @@ vec3 get_normal(vec2 normal_uv_pos) {
 	float e = 1.0 / 100.0; // TODO: Take resolution as a uniform var and use that here
 	
 	// Sobel filter for getting the normal at this position
-	float bottom_left = get_height(normal_uv_pos + vec2(-e, -e), false);
-	float bottom_center = get_height(normal_uv_pos + vec2(0, -e), false);
-	float bottom_right = get_height(normal_uv_pos + vec2(e, -e), false);
+	float bottom_left = get_height(normal_uv_pos + vec2(-e, -e));
+	float bottom_center = get_height(normal_uv_pos + vec2(0, -e));
+	float bottom_right = get_height(normal_uv_pos + vec2(e, -e));
 	
-	float center_left = get_height(normal_uv_pos + vec2(-e, 0), false);
-	float center_center = get_height(normal_uv_pos + vec2(0, 0), false);
-	float center_right = get_height(normal_uv_pos + vec2(e, 0), false);
+	float center_left = get_height(normal_uv_pos + vec2(-e, 0));
+	float center_center = get_height(normal_uv_pos + vec2(0, 0));
+	float center_right = get_height(normal_uv_pos + vec2(e, 0));
 	
-	float top_left = get_height(normal_uv_pos + vec2(-e, e), false);
-	float top_center = get_height(normal_uv_pos + vec2(0, e), false);
-	float top_right = get_height(normal_uv_pos + vec2(e, e), false);
+	float top_left = get_height(normal_uv_pos + vec2(-e, e));
+	float top_center = get_height(normal_uv_pos + vec2(0, e));
+	float top_right = get_height(normal_uv_pos + vec2(e, e));
 	
 	vec3 long_normal;
 	

@@ -5,7 +5,6 @@
 [resource]
 resource_local_to_scene = true
 shader = ExtResource( 1 )
-shader_param/has_heightmap_correction = false
 shader_param/height_scale = 1.0
 shader_param/has_hole = false
 shader_param/has_surface_heights = false

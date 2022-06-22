@@ -39,11 +39,6 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://UI/CustomElements/AutoIconButton.gd"
 }, {
-"base": "TextureButton",
-"class": "AutoTextureButton",
-"language": "GDScript",
-"path": "res://UI/CustomElements/AutoTextureButton.gd"
-}, {
 "base": "Object",
 "class": "CSVReader",
 "language": "GDScript",
@@ -259,7 +254,7 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Communication/SetTableExtentRequestHandler.gd"
 }, {
-"base": "Node",
+"base": "Control",
 "class": "SpecificLayerUI",
 "language": "GDScript",
 "path": "res://UI/Layers/LayerConfiguration/SpecificLayerUI/SpecificLayerUI.gd"
@@ -336,7 +331,6 @@ _global_script_class_icons={
 "AbstractRequestHandler": "",
 "ActionHandler": "",
 "AutoIconButton": "",
-"AutoTextureButton": "",
 "CSVReader": "",
 "CloudDome": "",
 "Configurator": "",

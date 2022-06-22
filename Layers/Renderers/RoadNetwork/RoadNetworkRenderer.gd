@@ -13,7 +13,6 @@ class_name RoadNetworkRenderer
 # direction			- 2 both, 1 edge direction, 0 opposite to edge direction, -1 unknown
 
 export(bool) var debug_draw_points: bool = false
-export(bool) var debug_draw_mesh: bool = false
 
 
 const radius = 2000
@@ -23,10 +22,10 @@ const mesh_size: float = 150.0
 const mesh_resolution: float = 100.0
 
 const lod_sample_rates: Array = [
-	150 / mesh_resolution,
-	750 / mesh_resolution,
-	3750 / mesh_resolution,
-	18750 / mesh_resolution
+	1.0,
+	3.0,
+	9.0,
+	27.0
 ]
 
 var roads_parent: Node
@@ -44,10 +43,6 @@ var terrain_renderer: RealisticTerrainRenderer
 
 
 func _ready():
-	if debug_draw_mesh:
-		for lod in $LODs.get_children():
-			lod.height_layer = layer.render_info.ground_height_layer
-	
 	#height_correction_image.create(mesh_size, mesh_size, false, Image.FORMAT_RF)
 	#height_correction_texture.storage = ImageTexture.STORAGE_RAW
 	#height_correction_texture.create_from_image(height_correction_image, Image.FORMAT_RF)
@@ -65,12 +60,24 @@ func _ready():
 # OVERRIDE #
 # Runs in a thread!
 func load_new_data():
-	if debug_draw_mesh:
-		for lod in $LODs.get_children():
-			lod.position_x = center[0]
-			lod.position_y = center[1]
-			lod.build()
+	pass
+			# Get points on other axis
+			#_set_correction_heights(point, sample_rate, road.width)
 	
+	#for road in roads_to_add.values():
+	#	var curve: Curve3D = road.curve
+	#	for index in curve.get_point_count():
+	#		var point: Vector3 = curve.get_point_position(index)
+			# Get points on other axis
+			#_set_correction_heights(point, sample_rate, road.width)
+	
+	#height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
+	#height_correction_texture.set_data(height_correction_image)
+	#terrain_renderer.set_height_correction_texture(height_correction_texture)
+
+
+# OVERRIDE #
+func apply_new_data():
 	var road_network_info: Layer.RoadNetworkRenderInfo = layer.render_info
 	var road_features = road_network_info.road_layer.get_features_near_position(center[0], center[1], radius, max_features)
 	var intersection_features = road_network_info.intersection_layer.get_features_near_position(center[0], center[1], radius, max_features)
@@ -89,27 +96,6 @@ func load_new_data():
 		for index in curve.get_point_count():
 			var point: Vector3 = curve.get_point_position(index)
 			point -= Vector3(shift[0], 0, shift[1])
-			# Get points on other axis
-			#_set_correction_heights(point, sample_rate, road.width)
-	
-	#for road in roads_to_add.values():
-	#	var curve: Curve3D = road.curve
-	#	for index in curve.get_point_count():
-	#		var point: Vector3 = curve.get_point_position(index)
-			# Get points on other axis
-			#_set_correction_heights(point, sample_rate, road.width)
-	
-	#height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
-	#height_correction_texture.set_data(height_correction_image)
-	#terrain_renderer.set_height_correction_texture(height_correction_texture)
-
-
-# OVERRIDE #
-func apply_new_data():
-	if debug_draw_mesh:
-		$LODs/TerrainLOD0.height_correction_texture = height_correction_texture
-		for lod in $LODs.get_children():
-			lod.apply_textures()
 	
 	if debug_draw_points:
 		for child in $Debug.get_children():
@@ -147,7 +133,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		var current_lod: int = 0
 		var lod_size: float = 0
 		for j in range(4):
-			lod_size = 150 * pow(5, j)
+			lod_size = pow(3, j) * 300
 			if abs(point.x) <= lod_size / 2 and abs(point.z) <= lod_size / 2:
 				break
 			current_lod += 1
@@ -203,13 +189,13 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		var current_lod: int = 0
 		var lod_size: float = 0
 		for j in range(4):
-			lod_size = 150 * pow(5, j)
+			lod_size = pow(3, j) * 300
 			if abs(current_point.x) <= lod_size / 2 and abs(current_point.z) <= lod_size / 2:
 				if (current_point == lod_x_grid_point or current_point == lod_z_grid_point) and\
 				(abs(next_point.x) > lod_size / 2 or abs(next_point.z) > lod_size / 2):
 					current_lod += 1
 					break
-				lod_size = 150 * pow(5, max(0, j - 1))
+				lod_size = pow(3, max(0, j - 1)) * 300
 				break
 			current_lod += 1
 		
@@ -382,7 +368,17 @@ func _move_to_ground_height(vector: Vector3) -> Vector3:
 
 # Gets the ground height at the given position
 func _get_ground_height(vector: Vector3) -> float:
-	return layer.render_info.ground_height_layer.get_value_at_position(center[0] + vector.x, center[1] - vector.z)
+	var space_state = get_world().direct_space_state
+	var result = space_state.intersect_ray(Vector3(vector.x, 6000, vector.z),Vector3(vector.x, -1000, vector.z))
+
+	if not result.empty():
+		return result.position.y
+	else:
+		result = space_state.intersect_ray(Vector3(vector.x + 0.01, 6000, vector.z + 0.01),Vector3(vector.x + 0.01, -1000, vector.z + 0.01))
+		if not result.empty():
+			return result.position.y
+		else:
+			return 1000.0
 
 
 # Triangular interpolation with barycentric coordinates. Returns weights as Vector3
