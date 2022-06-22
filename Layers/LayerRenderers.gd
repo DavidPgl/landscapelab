@@ -110,7 +110,7 @@ func apply_center_to_renderer(center_array: Array, renderer: LayerRenderer) -> v
 		
 		if load_data_threaded:
 			task.connect("finished", self, "_on_renderer_finished", [renderer.name], CONNECT_DEFERRED)
-			ThreadPool.enqueue_task(task)
+			ThreadPool.enqueue_task(task, 90)
 		else:
 			task.execute()
 			_on_renderer_finished(renderer.name)

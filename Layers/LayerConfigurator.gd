@@ -35,7 +35,7 @@ func load_gpkg(geopackage_path: String):
 	else:
 		emit_signal("geodata_invalid")
 	
-	# FIXME: Game Engine Testing
+#	# FIXME: Game Engine Testing
 #	var game_mode = GameMode.new()
 #
 #	var wka = game_mode.add_game_object_collection_for_feature_layer("WKA", Layers.geo_layers["features"]["windmills"])
@@ -150,7 +150,7 @@ func digest_gpkg(geopackage_path: String):
 		logger.error("No layer configuration found in the geopackage.", LOG_MODULE)
 	
 	# Load all geo_layers necessary for the configuration
-	Layers.geo_layers = get_geolayers(db, geopackage)
+	get_geolayers(db, geopackage)
 	
 	for layer_config in layer_configs:
 		var layer: Layer
@@ -221,24 +221,17 @@ func get_geolayers(db, gpkg):
 		"LL_externalgeolayer_to_layer", "", ["*"]
 	).duplicate()
 	
-	var rasters = {}
-	var features = {}
 	for raster in raster_layers:
-		rasters[raster.resource_name] = raster
+		Layers.add_geo_layer(raster, true)
 	
 	for feature in feature_layers:
-		features[feature.resource_name] = feature
+		Layers.add_geo_layer(feature, false)
 	
 	for external_config in externals_config:
 		var layer = external_layers.external_to_geolayer_from_type(db, external_config)
 		var layer_name = external_config.geolayer_path.get_basename()
 		layer_name = layer_name.substr(layer_name.rfind("/") + 1)
-		if layer is RasterLayer:
-			rasters[layer_name] = layer
-		else:
-			features[layer_name] = layer
-	
-	return { "rasters": rasters, "features": features }
+		Layers.add_geo_layer(layer, layer is RasterLayer)
 
 
 # Find the connections of the primitive geolayers to a a specific LL layer
@@ -548,6 +541,17 @@ func load_connected_object_layer(db, layer_config, geo_layers_config) -> Layer:
 	co_layer.name = layer_config.name
 	
 	return co_layer
+
+
+func load_twodimensional_layer(db, layer_config, geo_layers_config) -> Layer:
+	var layer_2d = Layer.new()
+	layer_2d.render_type = Layer.RenderType.TWODIMENSIONAL
+	layer_2d.render_info = Layer.TwoDimensionalInfo.new()
+	layer_2d.render_info.texture_layer = get_georasterlayer_by_type(
+		db, "TEXTURE_LAYER", geo_layers_config.rasters)
+	layer_2d.name = layer_config.name
+	
+	return layer_2d
 
 
 func get_avg_center():

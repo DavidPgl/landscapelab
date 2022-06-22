@@ -1,12 +1,13 @@
 extends Node
 
-var geo_layers: Dictionary
+var geo_layers: Dictionary = { "rasters": {}, "features": {}}
 var layers: Dictionary
 
 signal new_rendered_layer(layer)
 signal new_scored_layer(layer)
 signal new_layer(layer)
-signal removed_rendered_layer(layer_name)
+signal new_geo_layer(geo_layer, is_raster)
+signal removed_rendered_layer(layer_name, render_type)
 signal removed_scored_layer(layer_name)
 signal removed_layer(layer_name)
 
@@ -38,6 +39,11 @@ func get_layers_of_type(type):
 func add_layer(layer: Layer):
 	layers[layer.name] = layer
 	
+	# FIXME: is there any way to find out whether something is raster or feature
+	# FIXME: from the resource? 
+	for geo_layer in layer.render_info.get_geolayers():
+		add_geo_layer(geo_layer, true)
+	
 	if layer.is_scored:
 		emit_signal("new_scored_layer", layer)
 	if is_layer_rendered(layer):
@@ -46,11 +52,21 @@ func add_layer(layer: Layer):
 	emit_signal("new_layer", layer)
 
 
+func add_geo_layer(layer: Resource, is_raster: bool):
+	if layer:
+		if is_raster:
+			geo_layers["rasters"][layer.resource_name] = layer
+		else: 
+			geo_layers["features"][layer.resource_name] = layer
+		
+		emit_signal("new_geo_layer", is_raster)
+
+
 func remove_layer(layer_name: String):
 	if layers[layer_name].is_scored:
 		emit_signal("removed_scored_layer", layer_name)
 	if is_layer_rendered(layers[layer_name]):
-		emit_signal("removed_rendered_layer", layer_name)
+		emit_signal("removed_rendered_layer", layer_name, layers[layer_name].render_type)
 	
 	emit_signal("removed_layer", layer_name)
 	

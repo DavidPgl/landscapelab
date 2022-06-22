@@ -124,11 +124,6 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Communication/GetObjectLayerDataRequestHandler.gd"
 }, {
-"base": "AbstractRequestHandler",
-"class": "GetSettingsRequestHandler",
-"language": "GDScript",
-"path": "res://Communication/GetSettingsRequestHandler.gd"
-}, {
 "base": "CreationCondition",
 "class": "GreaterThanRasterCreationCondition",
 "language": "GDScript",
@@ -358,7 +353,6 @@ _global_script_class_icons={
 "GeoGameObjectCollection": "",
 "GeodataChooser": "",
 "GetObjectLayerDataRequestHandler": "",
-"GetSettingsRequestHandler": "",
 "GreaterThanRasterCreationCondition": "",
 "GroundTexture": "",
 "Layer": "",
@@ -412,14 +406,12 @@ config/icon="res://Resources/Icons/Meta/icon.png"
 
 [autoload]
 
-RenderedObjects="*res://Objects/RenderedObjects.gd"
 Startup="*res://Global/Startup.gd"
 logger="*res://Global/Debug/logger.gd"
 ErrorPrompt="*res://Global/Debug/ErrorPrompt.gd"
 Settings="*res://Config/Settings.gd"
 CommunicationServer="*res://Communication/CommunicationServer.gd"
 ThreadPool="*res://Global/ThreadPool/ThreadPool.gd"
-GameModeLoader="*res://Global/GameModeLoader.gd"
 Geodot="*res://addons/geodot/geodot.gdns"
 RenderStyle="*res://Global/RenderStyle.gd"
 GlobalVRAccess="*res://addons/vr-toolkit/GlobalVRAccess.gd"
@@ -441,7 +433,7 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PoolStringArray( "dscn_io", "gameflow" )
+enabled=PoolStringArray(  )
 
 [gdnative]
 

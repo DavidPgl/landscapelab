@@ -1,5 +1,4 @@
 extends Spatial
-tool
 
 #
 # This object is a child of a camera.
@@ -7,8 +6,6 @@ tool
 # It is used in the 3rd person camera to align a raycast (ItemSpawner); that way,
 # the position the mouse is clicking at in the 3D world can be found. 
 #
-
-export var show_collider: bool setget set_show_collider, get_show_collider
 
 onready var camera: Camera = get_parent()
 onready var cursor: RayCast = get_node("InteractRay")
@@ -18,17 +15,7 @@ var RAY_LENGTH = Settings.get_setting("mouse-point", "camera-ray-length") # Dist
 
 
 func set_visible(is_visible):
-	set_show_collider(is_visible)
 	visible = is_visible
-
-
-func set_show_collider(is_visible: bool):
-	if $MouseCollisionIndicator/TransformReset/Particle != null:
-		$MouseCollisionIndicator/TransformReset/Particle.visible = is_visible
-
-
-func get_show_collider():
-	return $MouseCollisionIndicator/TransformReset/Particle.visible
 
 
 func _ready():

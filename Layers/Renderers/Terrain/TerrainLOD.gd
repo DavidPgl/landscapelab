@@ -1,15 +1,9 @@
 extends MeshInstance
 
-
-export(Mesh) var inner_mesh
-export(Mesh) var ring_mesh
-export(float) var mesh_size
-
-export(bool) var is_inner
-
+# Note: the mesh must always be scaled so that one unit within the mesh resolution corresponds to 1m
+export(float) var mesh_resolution = 100
 export(float) var size = 100
 
-export(int) var heightmap_resolution = 100
 export(int) var ortho_resolution = 1000
 export(int) var landuse_resolution = 100
 
@@ -35,6 +29,7 @@ var landuse_layer
 var surface_height_layer
 
 var current_heightmap
+var current_normalmap
 var current_texture
 var current_landuse
 var current_surface_heightmap
@@ -56,42 +51,38 @@ signal updated_data
 
 func _ready():
 	visible = false
-	
-	if is_inner:
-		mesh = inner_mesh
-	else:
-		mesh = ring_mesh
 
 
-# TODO: Use this instead of the extra cull margin; can't get it to work properly atm
 func rebuild_aabb():
-	var aabb = AABB(Vector3.ZERO, Vector3(size / 2, 100000, size / 2))
+	var aabb = AABB(global_transform.origin - translation - Vector3(size / 2.0, 0.0, size / 2.0), Vector3(size, 100000, size))
 	set_custom_aabb(aabb)
 
 
 func build():
-	var top_left_x = position_x - size / 2
-	var top_left_y = position_y + size / 2
+	var top_left_x = position_x - size / 2 + translation.x
+	var top_left_y = position_y + size / 2 - translation.z
 	
-	scale.x = size / mesh_size
-	scale.z = size / mesh_size
+	scale.x = size / mesh_resolution
+	scale.z = size / mesh_resolution
 	
-	# FIXME: Required because of a thread unsafety with VegetationParticles.update_textures_with_images - why?
-	Vegetation.load_mutex.lock()
-
+	$HeightmapCollider.translation.x = 1.0 - (size / mesh_resolution) / scale.x 
+	$HeightmapCollider.translation.z = 1.0 - (size / mesh_resolution) / scale.x
+	
+	$HeightmapCollider.scale.x = 1.0 + 1.0 / mesh_resolution
+	$HeightmapCollider.scale.z = 1.0 + 1.0 / mesh_resolution
+	
 	# Heightmap
 	var current_height_image = height_layer.get_image(
 		top_left_x,
 		top_left_y,
 		size,
-		heightmap_resolution,
-		1
+		mesh_resolution,
+		0
 	)
 	
 	if current_height_image.is_valid():
 		current_heightmap = current_height_image.get_image_texture()
-	
-	Vegetation.load_mutex.unlock()
+		current_normalmap = current_height_image.get_normalmap_texture_for_heightmap(0.005)
 	
 	# Texture
 	if texture_layer:
@@ -125,7 +116,7 @@ func build():
 			top_left_x,
 			top_left_y,
 			size,
-			heightmap_resolution,
+			mesh_resolution,
 			1
 		)
 		
@@ -151,17 +142,33 @@ func build():
 				current_normal_fade_textures = Vegetation.get_fade_sheet_texture(group_array, "normal")
 
 func apply_textures():
+	rebuild_aabb()
+	
 	material_override.set_shader_param("size", size)
 	
 	if current_heightmap:
 		material_override.set_shader_param("heightmap", current_heightmap)
+		material_override.set_shader_param("normalmap", current_normalmap)
 		
-		if height_correction_texture:
-			material_override.set_shader_param("has_heightmap_correction", true)
-			material_override.set_shader_param("heightmap_correction", height_correction_texture)
-		
-		if has_node("CollisionMeshCreator"):
-			$CollisionMeshCreator.create_mesh(current_heightmap, size)
+		# Create a float array for the heightmap collider to use as a heightmap
+		var heightmap_image = current_heightmap.get_data()
+		heightmap_image.convert(Image.FORMAT_RF)
+		$HeightmapCollider/CollisionShape.shape = HeightMapShape.new()
+		$HeightmapCollider/CollisionShape.shape.map_width = heightmap_image.get_width()
+		$HeightmapCollider/CollisionShape.shape.map_depth = heightmap_image.get_height()
+
+		# Assign the heights using the image's raw data.
+		# Because the format matches, this is straightforward
+		var float_array = PoolRealArray()
+		float_array.resize(heightmap_image.get_width() * heightmap_image.get_height())
+		heightmap_image.lock()
+		var i = 0
+		for y in heightmap_image.get_height():
+			for x in heightmap_image.get_width():
+				float_array[i] = heightmap_image.get_pixel(x, y).r
+				i += 1
+		heightmap_image.unlock()
+		$HeightmapCollider/CollisionShape.shape.map_data = float_array
 
 		if has_node("ExtraLOD"):
 			$ExtraLOD.apply_textures(current_heightmap, current_surface_heightmap, current_landuse)

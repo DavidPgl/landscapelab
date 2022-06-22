@@ -17,16 +17,17 @@ var color_tag: Color = Color.transparent
 
 # NOTE: these RenderTypes have to be synchronous with the LL_render_types table in the geopackage except for NONE
 enum RenderType {
-	NONE = 0,
-	BASIC_TERRAIN = 1,
-	REALISTIC_TERRAIN = 2,
-	PARTICLES = 3,
-	OBJECT = 4,
-	PATH = 5,
-	CONNECTED_OBJECT = 6,
-	POLYGON = 7,
-	VEGETATION = 8,
-	ROAD_NETWORK = 9
+	NONE,
+	BASIC_TERRAIN,
+	REALISTIC_TERRAIN,
+	PARTICLES,
+	OBJECT,
+	PATH,
+	CONNECTED_OBJECT,
+	POLYGON,
+	VEGETATION,
+	ROAD_NETWORK,
+	TWODIMENSIONAL
 }
 var render_type = RenderType.NONE
 var render_info
@@ -191,3 +192,11 @@ class ConnectedObjectInfo extends RenderInfo:
 	
 	func is_valid():
 		return ground_height_layer != null
+
+class TwoDimensionalInfo extends RenderInfo: 
+	var texture_layer: Layer
+	func get_geolayers() -> Array:
+		return [texture_layer]
+	
+	func is_valid() -> bool:
+		return texture_layer.is_valid()
