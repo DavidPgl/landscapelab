@@ -25,7 +25,6 @@ albedo_color = Color( 0.419608, 0, 1, 1 )
 
 [node name="RoadNetworkRenderer" type="Spatial"]
 script = ExtResource( 1 )
-debug_draw_points = true
 
 [node name="Debug_Point_Start" type="MeshInstance" parent="."]
 mesh = SubResource( 1 )

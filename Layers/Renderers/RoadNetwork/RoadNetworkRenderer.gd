@@ -28,7 +28,7 @@ const lod_sample_rates: Array = [
 	27.0
 ]
 
-var roads_parent: Node
+var roads_parent: Spatial
 
 # Road id to road instance
 var roads: Dictionary = {}
@@ -43,12 +43,6 @@ var terrain_renderer: RealisticTerrainRenderer
 
 
 func _ready():
-	#height_correction_image.create(mesh_size, mesh_size, false, Image.FORMAT_RF)
-	#height_correction_texture.storage = ImageTexture.STORAGE_RAW
-	#height_correction_texture.create_from_image(height_correction_image, Image.FORMAT_RF)
-	
-	#height_correction_data.resize(mesh_size * mesh_size * 4)
-	
 	# TODO: Replace with better access
 	# Find and get terrain renderer
 	for renderer in get_parent().get_children():
@@ -71,8 +65,6 @@ func load_new_data():
 			# Get points on other axis
 			#_set_correction_heights(point, sample_rate, road.width)
 	
-	#height_correction_image.create_from_data(mesh_size, mesh_size, false, Image.FORMAT_RF, height_correction_data)
-	#height_correction_texture.set_data(height_correction_image)
 	#terrain_renderer.set_height_correction_texture(height_correction_texture)
 
 
@@ -82,20 +74,12 @@ func apply_new_data():
 	var road_features = road_network_info.road_layer.get_features_near_position(center[0], center[1], radius, max_features)
 	var intersection_features = road_network_info.intersection_layer.get_features_near_position(center[0], center[1], radius, max_features)
 
-	# Reset corrections
-	#for i in range(mesh_size * mesh_size * 4):
-	#	height_correction_data[i] = 0
 	
-	roads_parent = Node.new()
+	
+	roads_parent = Spatial.new()
 	roads_parent.name = "Roads"
 	for road in road_features:
 		_create_road(road, road_network_info.road_instance_scene)
-	
-	for road in roads.values():
-		var curve: Curve3D = road.curve
-		for index in curve.get_point_count():
-			var point: Vector3 = curve.get_point_position(index)
-			point -= Vector3(shift[0], 0, shift[1])
 	
 	if debug_draw_points:
 		for child in $Debug.get_children():
@@ -162,7 +146,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		C = _move_to_ground_height(C)
 		
 		# Get height for road points with triangular interpolation
-		var weights = _triangularInterpolation(point, A, B, C)
+		var weights = RoadNetworkUtil.triangularInterpolation(point, A, B, C)
 		
 		point.y = A.y * weights.x + B.y * weights.y + C.y * weights.z
 		road_curve.set_point_position(index, point)
@@ -374,20 +358,12 @@ func _get_ground_height(vector: Vector3) -> float:
 	if not result.empty():
 		return result.position.y
 	else:
+		# If nothing was hit (e.g. border between LODs has a gap) try again with offset
 		result = space_state.intersect_ray(Vector3(vector.x + 0.01, 6000, vector.z + 0.01),Vector3(vector.x + 0.01, -1000, vector.z + 0.01))
 		if not result.empty():
 			return result.position.y
 		else:
-			return 1000.0
-
-
-# Triangular interpolation with barycentric coordinates. Returns weights as Vector3
-func _triangularInterpolation(P, A, B, C) -> Vector3:
-	var W1 = ((B.z - C.z) * (P.x - C.x) + (C.x - B.x) * (P.z - C.z)) / ((B.z - C.z) * (A.x - C.x) + (C.x - B.x) * (A.z - C.z))
-	var W2 = ((C.z - A.z) * (P.x - C.x) + (A.x - C.x) * (P.z - C.z)) / ((B.z - C.z) * (A.x - C.x) + (C.x - B.x) * (A.z - C.z))
-	var W3 = 1 - W1 - W2
-	
-	return Vector3(W1, W2, W3)
+			return 0.0
 
 
 # Gets the intersection with the grid in x direction (parallel to z-axis)
@@ -501,7 +477,7 @@ func _get_diagonal_point(from: Vector3, to: Vector3, step_size: float):
 
 
 # Calculates neighboring points and adds height difference to the correction texture
-func _set_correction_heights(point: Vector3, step_size: float, width: float) -> void:
+func _set_correction_heights(texture: HeightCorrectionTexture, point: Vector3, step_size: float, width: float) -> void:
 	var required_points: int = width / step_size
 	var smooth_points: int = required_points / 2
 	
@@ -510,97 +486,47 @@ func _set_correction_heights(point: Vector3, step_size: float, width: float) -> 
 	var x: int
 	var z: int
 	
-	
+	# Set required points depending on width, going left/right and up/down
 	for i in range(required_points):
-		x_grid_point = _get_x_grid_point(point, step_size, i)
+		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, i)
 		x = x_grid_point.x + mesh_size / 2
 		z = x_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, x_grid_point, 1.0)
+		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0)
 		
-		x_grid_point = _get_x_grid_point(point, step_size, -i - 1)
+		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, -i - 1)
 		x = x_grid_point.x + mesh_size / 2
 		z = x_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, x_grid_point, 1.0)
+		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0)
 		
-		z_grid_point = _get_z_grid_point(point, step_size, i)
+		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, i)
 		x = z_grid_point.x + mesh_size / 2
 		z = z_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, z_grid_point, 1.0)
+		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0)
 		
-		z_grid_point = _get_z_grid_point(point, step_size, -i - 1)
+		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, -i - 1)
 		x = z_grid_point.x + mesh_size / 2
 		z = z_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, z_grid_point, 1.0)
+		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0)
 	
+	# Interpolate between correction height and original height to smooth out
 	for i in range(1, smooth_points, 1):
-		x_grid_point = _get_x_grid_point(point, step_size, i + required_points - 1)
+		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, i + required_points - 1)
 		x = x_grid_point.x + mesh_size / 2
 		z = x_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, x_grid_point, 1.0 / i)
+		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0 / i)
 		
-		x_grid_point = _get_x_grid_point(point, step_size, -i - 1 + required_points - 1)
+		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, -i - 1 + required_points - 1)
 		x = x_grid_point.x + mesh_size / 2
 		z = x_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, x_grid_point, 1.0 / i)
+		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0 / i)
 		
-		z_grid_point = _get_z_grid_point(point, step_size, i + required_points - 1)
+		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, i + required_points - 1)
 		x = z_grid_point.x + mesh_size / 2
 		z = z_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, z_grid_point, 1.0 / i)
+		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0 / i)
 		
-		z_grid_point = _get_z_grid_point(point, step_size, -i - 1 + required_points - 1)
+		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, -i - 1 + required_points - 1)
 		x = z_grid_point.x + mesh_size / 2
 		z = z_grid_point.z + mesh_size / 2
-		_set_correction_height(point.y, x, z, z_grid_point, 1.0 / i)
+		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0 / i)
 
-
-# Adds the height difference to the correction texture
-func _set_correction_height(point_height: float, x: float, z: float, grid_point: Vector3, interpolation_factor: float) -> void:
-	if x >= mesh_size || z >= mesh_size || x < 0 || z < 0:
-		return
-	var height: float = _get_ground_height(grid_point)
-	# Wrap 64-bit float into Vector2 to cast it to 32-bit
-	var correction: Vector2 = Vector2(lerp(height, point_height, interpolation_factor), 0.0)
-	var position: int = (z * mesh_size + x) * 4
-	
-	# Check previous correction
-	var old_bytes: PoolByteArray
-	# Vector2 header
-	old_bytes.append(5)
-	old_bytes.append(0)
-	old_bytes.append(0)
-	old_bytes.append(0)
-	# height as 32-bit float
-	old_bytes.append_array(height_correction_data.subarray(position, position + 3))
-	# zero as 32-bit float
-	old_bytes.append(0)
-	old_bytes.append(0)
-	old_bytes.append(0)
-	old_bytes.append(0)
-	# Reconstruct vector from bytes
-	var old_correction: Vector2 = bytes2var(old_bytes)
-	
-	if old_correction.x != 0.0 and old_correction.x < correction.x:
-		return
-	
-	# Convert Vector2 to bytes
-	var bytes: PoolByteArray = var2bytes(correction)
-	# Read only 4 bytes from x (Byte 4 to 7)
-	for i in range(4):
-		height_correction_data[position + i] = bytes[i + 4]
-
-
-# Calculates the grid point in x direction with the given grid offset
-func _get_x_grid_point(point: Vector3, step_size: float, offset_count: int) -> Vector3:
-	return Vector3(
-		(floor(point.x / step_size) + offset_count) * step_size,
-		point.y,
-		floor(point.z / step_size) * step_size)
-
-
-# Calculates the grid point in z direction with the given grid offset
-func _get_z_grid_point(point: Vector3, step_size: float, offset_count: int) -> Vector3:
-	return Vector3(
-		floor(point.x / step_size) * step_size,
-		point.y,
-		(floor(point.z / step_size) + offset_count) * step_size)
