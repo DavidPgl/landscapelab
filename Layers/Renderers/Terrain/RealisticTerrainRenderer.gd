@@ -55,8 +55,9 @@ func apply_new_data():
 	for lod in get_children():
 		lod.apply_textures()
 
-func set_height_correction_texture(height_correction_texture) -> void:
-	lods[0].height_correction_texture = height_correction_texture
+
+func set_height_correction_texture(lod_index: int, height_correction_texture) -> void:
+	lods[lod_index].set_height_correction_texture(height_correction_texture)
 
 
 func get_debug_info() -> String:

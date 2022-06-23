@@ -18,9 +18,6 @@ export(bool) var debug_draw_points: bool = false
 const radius = 2000
 const max_features = 50000
 
-const mesh_size: float = 150.0
-const mesh_resolution: float = 100.0
-
 const lod_sample_rates: Array = [
 	1.0,
 	3.0,
@@ -34,10 +31,10 @@ var roads_parent: Spatial
 var roads: Dictionary = {}
 var debug_points: Array = []
 
-var height_correction_data: PoolByteArray
-
-var height_correction_image: Image = Image.new()
-var height_correction_texture: ImageTexture = ImageTexture.new()
+var height_correction_textures: Array = [
+	HeightCorrectionTexture.new(300),
+	HeightCorrectionTexture.new(100)
+]
 
 var terrain_renderer: RealisticTerrainRenderer
 
@@ -54,40 +51,30 @@ func _ready():
 # OVERRIDE #
 # Runs in a thread!
 func load_new_data():
-	pass
-			# Get points on other axis
-			#_set_correction_heights(point, sample_rate, road.width)
-	
-	#for road in roads_to_add.values():
-	#	var curve: Curve3D = road.curve
-	#	for index in curve.get_point_count():
-	#		var point: Vector3 = curve.get_point_position(index)
-			# Get points on other axis
-			#_set_correction_heights(point, sample_rate, road.width)
-	
-	#terrain_renderer.set_height_correction_texture(height_correction_texture)
-
-
-# OVERRIDE #
-func apply_new_data():
 	var road_network_info: Layer.RoadNetworkRenderInfo = layer.render_info
 	var road_features = road_network_info.road_layer.get_features_near_position(center[0], center[1], radius, max_features)
 	var intersection_features = road_network_info.intersection_layer.get_features_near_position(center[0], center[1], radius, max_features)
-
-	
 	
 	roads_parent = Spatial.new()
 	roads_parent.name = "Roads"
 	for road in road_features:
 		_create_road(road, road_network_info.road_instance_scene)
 	
+	for height_correction_texture in height_correction_textures:
+		height_correction_texture.update_texture()
+	
+	terrain_renderer.set_height_correction_texture(0, height_correction_textures[0].texture)
+	terrain_renderer.set_height_correction_texture(1, height_correction_textures[1].texture)
+
+
+# OVERRIDE #
+func apply_new_data():	
 	if debug_draw_points:
 		for child in $Debug.get_children():
 			child.queue_free()
 		for point in debug_points:
 			$Debug.add_child(point)
 		debug_points.clear()
-	
 	
 	# Remove old objects
 	$Roads.free()
@@ -151,6 +138,9 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		point.y = A.y * weights.x + B.y * weights.y + C.y * weights.z
 		road_curve.set_point_position(index, point)
 		
+		if current_lod < height_correction_textures.size():
+			_set_correction_heights(height_correction_textures[current_lod], point, sample_rate, road_width)
+		
 		if debug_draw_points:
 			var debug_point: MeshInstance = $Debug_Point.duplicate() if index > 0 else $Debug_Point_Start.duplicate()
 			debug_point.transform.origin = point
@@ -209,7 +199,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				var height = p1_height * (1 - weight) + p2_height * weight
 				lod_x_grid_point.y = height
 				
-				road_curve.add_point(lod_x_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				_add_point_to_curve(road_curve, lod_x_grid_point, current_point_index + 1, current_lod, sample_rate, road_width)
 				next_point = lod_x_grid_point
 				
 				if debug_draw_points:
@@ -234,7 +224,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				var height = p1_height * (1 - weight) + p2_height * weight
 				lod_z_grid_point.y = height
 				
-				road_curve.add_point(lod_z_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				_add_point_to_curve(road_curve, lod_z_grid_point, current_point_index + 1, current_lod, sample_rate, road_width)
 				next_point = lod_z_grid_point
 				
 				if debug_draw_points:
@@ -267,7 +257,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 				intersection_point.y = height
 				
 				# Add intersection to curve
-				road_curve.add_point(intersection_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				_add_point_to_curve(road_curve, intersection_point, current_point_index + 1, current_lod, sample_rate, road_width)
 				current_point_index += 1
 				
 				if debug_draw_points:
@@ -322,11 +312,11 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			
 			# Add closest one
 			if z_grid_point == null || (x_grid_point != null && current_point.distance_squared_to(x_grid_point) <= current_point.distance_squared_to(z_grid_point)):
-				road_curve.add_point(x_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				_add_point_to_curve(road_curve, x_grid_point, current_point_index + 1, current_lod, sample_rate, road_width)
 				current_point = x_grid_point
 				x_grid_point = null
 			else:
-				road_curve.add_point(z_grid_point, Vector3.ZERO, Vector3.ZERO, current_point_index + 1)
+				_add_point_to_curve(road_curve, z_grid_point, current_point_index + 1, current_lod, sample_rate, road_width)
 				current_point = z_grid_point
 				z_grid_point = null
 			
@@ -344,6 +334,13 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	
 	# TODO: Add other road info to road instance
 	roads_parent.add_child(road_instance)
+
+
+func _add_point_to_curve(curve: Curve3D, point: Vector3, point_index: int, lod_index: int, step_size: float, point_width: float):
+	curve.add_point(point, Vector3.ZERO, Vector3.ZERO, point_index)
+	if lod_index < height_correction_textures.size():
+		_set_correction_heights(height_correction_textures[lod_index], point, step_size, point_width)
+
 
 # Moves the given vector to the ground and returns it
 func _move_to_ground_height(vector: Vector3) -> Vector3:
@@ -478,6 +475,7 @@ func _get_diagonal_point(from: Vector3, to: Vector3, step_size: float):
 
 # Calculates neighboring points and adds height difference to the correction texture
 func _set_correction_heights(texture: HeightCorrectionTexture, point: Vector3, step_size: float, width: float) -> void:
+	var size = texture.size
 	var required_points: int = width / step_size
 	var smooth_points: int = required_points / 2
 	
@@ -489,44 +487,44 @@ func _set_correction_heights(texture: HeightCorrectionTexture, point: Vector3, s
 	# Set required points depending on width, going left/right and up/down
 	for i in range(required_points):
 		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, i)
-		x = x_grid_point.x + mesh_size / 2
-		z = x_grid_point.z + mesh_size / 2
+		x = x_grid_point.x + size / 2
+		z = x_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0)
 		
 		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, -i - 1)
-		x = x_grid_point.x + mesh_size / 2
-		z = x_grid_point.z + mesh_size / 2
+		x = x_grid_point.x + size / 2
+		z = x_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0)
 		
 		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, i)
-		x = z_grid_point.x + mesh_size / 2
-		z = z_grid_point.z + mesh_size / 2
+		x = z_grid_point.x + size / 2
+		z = z_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0)
 		
 		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, -i - 1)
-		x = z_grid_point.x + mesh_size / 2
-		z = z_grid_point.z + mesh_size / 2
+		x = z_grid_point.x + size / 2
+		z = z_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0)
 	
 	# Interpolate between correction height and original height to smooth out
 	for i in range(1, smooth_points, 1):
 		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, i + required_points - 1)
-		x = x_grid_point.x + mesh_size / 2
-		z = x_grid_point.z + mesh_size / 2
+		x = x_grid_point.x + size / 2
+		z = x_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0 / i)
 		
 		x_grid_point = RoadNetworkUtil.get_x_grid_point(point, step_size, -i - 1 + required_points - 1)
-		x = x_grid_point.x + mesh_size / 2
-		z = x_grid_point.z + mesh_size / 2
+		x = x_grid_point.x + size / 2
+		z = x_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(x_grid_point), 1.0 / i)
 		
 		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, i + required_points - 1)
-		x = z_grid_point.x + mesh_size / 2
-		z = z_grid_point.z + mesh_size / 2
+		x = z_grid_point.x + size / 2
+		z = z_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0 / i)
 		
 		z_grid_point = RoadNetworkUtil.get_z_grid_point(point, step_size, -i - 1 + required_points - 1)
-		x = z_grid_point.x + mesh_size / 2
-		z = z_grid_point.z + mesh_size / 2
+		x = z_grid_point.x + size / 2
+		z = z_grid_point.z + size / 2
 		texture.set_height(x, z, point.y, _get_ground_height(z_grid_point), 1.0 / i)
 

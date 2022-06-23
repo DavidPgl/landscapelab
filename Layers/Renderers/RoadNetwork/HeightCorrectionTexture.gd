@@ -2,40 +2,40 @@ extends Node
 class_name HeightCorrectionTexture
 
 var texture: ImageTexture = ImageTexture.new()
+var size: int = 0
 
 var _data: PoolByteArray
 var _image: Image = Image.new()
-var _size: int = 0
 
 
 func _init(size: int):
-	_size = size
-	_image.create(_size, _size, false, Image.FORMAT_RF)
+	self.size = size
+	_image.create(size, size, false, Image.FORMAT_RF)
 	texture.storage = ImageTexture.STORAGE_RAW
 	texture.create_from_image(_image, Image.FORMAT_RF)
 	
-	_data.resize(_size * _size * 4)
+	_data.resize(size * size * 4)
 
 
 func reset() -> void:
 	# Reset corrections
-	for i in range(_size * _size * 4):
+	for i in range(size * size * 4):
 		_data[i] = 0
 
 
 func update_texture() -> void:
-	_image.create_from_data(_size, _size, false, Image.FORMAT_RF, _data)
+	_image.create_from_data(size, size, false, Image.FORMAT_RF, _data)
 	texture.set_data(_image)
 
 
 func set_height(x: float, z: float, new_height: float, old_height: float, interpolation_factor: float) -> void:
 	# Outside of texture
-	if x >= _size || z >= _size || x < 0 || z < 0:
+	if x >= size || z >= size || x < 0 || z < 0:
 		return
 	
 	# Wrap 64-bit float into Vector2 to cast it to 32-bit
 	var correction: Vector2 = Vector2(lerp(old_height, new_height, interpolation_factor), 0.0)
-	var position: int = (z * _size + x) * 4
+	var position: int = (z * size + x) * 4
 	
 	# Check previous correction
 	var old_bytes: PoolByteArray
