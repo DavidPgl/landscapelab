@@ -15,7 +15,7 @@ class_name RoadNetworkRenderer
 export(bool) var debug_draw_points: bool = false
 
 
-const radius = 2000
+const radius = 500
 const max_features = 50000
 
 const lod_sample_rates: Array = [
@@ -86,9 +86,25 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	# Set road curve
 	var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
 	var road_width = float(road_feature.get_attribute("width"))
+	
+	if road_width <= 0:
+		road_width = 3
 
 	# INITIAL POINTS
-	_set_initial_point_heights(road_curve, road_width)
+	for index in range(road_curve.get_point_count()):
+		# Make sure all roads are facing up
+		road_curve.set_point_tilt(index, 0)
+		
+		var point = road_curve.get_point_position(index)
+		point = _get_ground_point(point)
+		road_curve.set_point_position(index, point)
+		
+		_set_correction_heights(height_correction_textures[0], point, 1.0, road_width)
+		
+		if debug_draw_points:
+			var debug_point: MeshInstance = $Debug_Point.duplicate() if index > 0 else $Debug_Point_Start.duplicate()
+			debug_point.transform.origin = point
+			debug_points.append(debug_point)
 	
 	
 	# Add additional curve points depending on heightmap resolution
@@ -104,7 +120,6 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 		var next_point: Vector3 = road_curve.get_point_position(current_point_index + 1)
 		
 		# LOD INTERSECTIONS
-		
 		# Get the LOD
 		var current_lod: int = 0
 		var lod_size: float = 0
@@ -211,26 +226,9 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 	roads_parent.add_child(road_instance)
 
 
-func _set_initial_point_heights(road_curve: Curve3D, road_width: float) -> void:
-	for index in range(road_curve.get_point_count()):
-		# Make sure all roads are facing up
-		road_curve.set_point_tilt(index, 0)
-		
-		var point = road_curve.get_point_position(index)
-		point = _get_ground_point(point)
-		road_curve.set_point_position(index, point)
-		
-		_set_correction_heights(height_correction_textures[0], Vector3(point.x, point.y - 10, point.z), 1.0, road_width)
-		
-		if debug_draw_points:
-			var debug_point: MeshInstance = $Debug_Point.duplicate() if index > 0 else $Debug_Point_Start.duplicate()
-			debug_point.transform.origin = point
-			debug_points.append(debug_point)
-
-
-func _add_point_to_curve(curve: Curve3D, point: Vector3, point_index: int, point_width: float):
+func _add_point_to_curve(curve: Curve3D, point: Vector3, point_index: int, width: float):
 	curve.add_point(point, Vector3.ZERO, Vector3.ZERO, point_index)
-	_set_correction_heights(height_correction_textures[0], Vector3(point.x, point.y - 10, point.z), 1.0, point_width)
+	_set_correction_heights(height_correction_textures[0], Vector3(point.x, point.y, point.z), 1.0, width)
 
 
 # Moves the given vector to the ground and returns it
@@ -258,7 +256,7 @@ func _get_ground_height(vector: Vector3) -> float:
 func _set_correction_heights(texture: HeightCorrectionTexture, point: Vector3, step_size: float, width: float) -> void:
 	var size = texture.size * texture.resolution
 	var required_points: int = width / step_size
-	var smooth_points: int = required_points / 2
+	var smooth_points: int = max(required_points / 2, 5)
 	
 	var x_grid_point: Vector3
 	var z_grid_point: Vector3
