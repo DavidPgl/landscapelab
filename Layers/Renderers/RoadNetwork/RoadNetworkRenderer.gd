@@ -137,16 +137,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			else:
 				lod_point = lod_z_grid_point + shift
 			
-			var P1 = QuadUtil.get_lower_left_point(lod_point, sample_rate)
-			var P2 = QuadUtil.get_upper_left_point(lod_point, sample_rate)
-			
-			var p1_height = _get_ground_height(P1)
-			var p2_height = _get_ground_height(P2)
-			
-			var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, lod_point)
-			
-			var height = p1_height * (1 - weight) + p2_height * weight
-			lod_point.y = height
+			lod_point = _get_ground_point(lod_point)
 			
 			_add_point_to_curve(road_curve, lod_point, current_point_index + 1, road_width)
 			next_point = lod_point
@@ -166,16 +157,7 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# INTERSECTION WITH DIAGONAL
 			var intersection_point = QuadUtil.get_diagonal_intersection(current_point, next_point, sample_rate)
 			if intersection_point != null:
-				# Calculate correct height by interpolating between grid points
-				var A = QuadUtil.get_lower_right_point(intersection_point, sample_rate)
-				var C = QuadUtil.get_upper_left_point(intersection_point, sample_rate)
-				
-				var a_height = _get_ground_height(A)
-				var c_height = _get_ground_height(C)
-				var weight: float = RoadNetworkUtil.inverse_lerp_vector(A, C, intersection_point)
-				var height = a_height * (1 - weight) + c_height * weight
-				
-				intersection_point.y = height
+				intersection_point = _get_ground_point(intersection_point)
 				
 				# Add intersection to curve
 				_add_point_to_curve(road_curve, intersection_point, current_point_index + 1, road_width)
@@ -190,34 +172,10 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			# Only calculate grid point if we don't have one from last calculation
 			if x_grid_point == null:
 				x_grid_point = QuadUtil.get_horizontal_intersection(current_point, next_point, sample_rate)
-				if x_grid_point != null:
-					# Calculate correct height by interpolating between grid points
-					
-					var P1 = QuadUtil.get_lower_left_point(x_grid_point, sample_rate)
-					var P2 = QuadUtil.get_upper_left_point(x_grid_point, sample_rate)
-					
-					var p1_height = _get_ground_height(P1)
-					var p2_height = _get_ground_height(P2)
-					
-					var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, x_grid_point)
-					var height = p1_height * (1 - weight) + p2_height * weight
-					
-					x_grid_point.y = height
 			
 			# Same for z
 			if z_grid_point == null:
 				z_grid_point = QuadUtil.get_vertical_intersection(current_point, next_point, sample_rate)
-				if z_grid_point != null:
-					var P1 = QuadUtil.get_lower_left_point(z_grid_point, sample_rate)
-					var P2 = QuadUtil.get_lower_right_point(z_grid_point, sample_rate)
-					
-					var p1_height = _get_ground_height(P1)
-					var p2_height = _get_ground_height(P2)
-					
-					var weight: float = RoadNetworkUtil.inverse_lerp_vector(P1, P2, z_grid_point)
-					var height = p1_height * (1 - weight) + p2_height * weight
-					
-					z_grid_point.y = height
 			
 			# If no grid points, done with this curve edge
 			if x_grid_point == null && z_grid_point == null:
@@ -227,10 +185,12 @@ func _create_road(road_feature, road_instance_scene: PackedScene) -> void:
 			
 			# Add closest one
 			if z_grid_point == null || (x_grid_point != null && current_point.distance_squared_to(x_grid_point) <= current_point.distance_squared_to(z_grid_point)):
+				x_grid_point = _get_ground_point(x_grid_point)
 				_add_point_to_curve(road_curve, x_grid_point, current_point_index + 1, road_width)
 				current_point = x_grid_point
 				x_grid_point = null
 			else:
+				z_grid_point = _get_ground_point(z_grid_point)
 				_add_point_to_curve(road_curve, z_grid_point, current_point_index + 1, road_width)
 				current_point = z_grid_point
 				z_grid_point = null
@@ -257,37 +217,7 @@ func _set_initial_point_heights(road_curve: Curve3D, road_width: float) -> void:
 		road_curve.set_point_tilt(index, 0)
 		
 		var point = road_curve.get_point_position(index)
-		
-		# Get the LOD
-		var current_lod: int = 0
-		var lod_size: float = 0
-		for j in range(4):
-			lod_size = pow(3, j) * 300
-			if abs(point.x) <= lod_size / 2 and abs(point.z) <= lod_size / 2:
-				break
-			current_lod += 1
-		
-		var sample_rate = lod_sample_rates[current_lod]
-		
-		var A: Vector3 = QuadUtil.get_lower_right_point(point, sample_rate)
-
-		var B: Vector3
-		# If the point is in the lower triangle of the quad, use lower left, otherwise upper right
-		if fposmod(point.x, sample_rate) + fposmod(point.z, sample_rate) <= sample_rate:
-			B = QuadUtil.get_lower_left_point(point, sample_rate)
-		else:
-			B = QuadUtil.get_upper_right_point(point, sample_rate)
-
-		var C = QuadUtil.get_upper_left_point(point, sample_rate)
-		
-		A = _get_ground_point(A)
-		B = _get_ground_point(B)
-		C = _get_ground_point(C)
-		
-		# Get height for road points with triangular interpolation
-		var weights = RoadNetworkUtil.triangularInterpolation(point, A, B, C)
-		
-		point.y = A.y * weights.x + B.y * weights.y + C.y * weights.z
+		point = _get_ground_point(point)
 		road_curve.set_point_position(index, point)
 		
 		_set_correction_heights(height_correction_textures[0], Vector3(point.x, point.y - 10, point.z), 1.0, road_width)
