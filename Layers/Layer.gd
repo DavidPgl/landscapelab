@@ -26,7 +26,6 @@ enum RenderType {
 	CONNECTED_OBJECT,
 	POLYGON,
 	VEGETATION,
-	ROAD_NETWORK,
 	TWODIMENSIONAL
 }
 var render_type = RenderType.NONE
@@ -98,6 +97,12 @@ class RealisticTerrainRenderInfo extends RenderInfo:
 	var surface_height_layer: Layer
 	var texture_layer: Layer
 	var landuse_layer: Layer
+	
+	# Road Network
+	var road_layer: Layer
+	var intersection_layer: Layer
+	var road_instance_scene: PackedScene
+	var intersection_instance_scene: PackedScene
 	
 	func get_geolayers():
 		return [height_layer, surface_height_layer, texture_layer, landuse_layer]

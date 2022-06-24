@@ -3,6 +3,7 @@ class_name RealisticTerrainRenderer
 
 
 var lods = []
+var LOD0
 
 
 func _ready():
@@ -16,6 +17,7 @@ func _ready():
 					if scales == 0:
 						lod.mesh = preload("res://Layers/Renderers/Terrain/lod_mesh_300x300.obj")
 						lod.mesh_resolution = 300
+						LOD0 = lod
 					else:
 						continue
 				
@@ -40,7 +42,13 @@ func _ready():
 				lods.append(lod)
 	
 	for lod in lods:
-		add_child(lod)
+		$LODs.add_child(lod)
+	
+	# Setup Road Network
+	$RoadNetworkRenderer.road_layer = layer.render_info.road_layer
+	$RoadNetworkRenderer.intersection_layer = layer.render_info.intersection_layer
+	$RoadNetworkRenderer.road_instance_scene = layer.render_info.road_instance_scene
+	$RoadNetworkRenderer.intersection_instance_scene = layer.render_info.intersection_instance_scene
 
 
 func load_new_data():
@@ -49,15 +57,21 @@ func load_new_data():
 		lod.position_y = center[1]
 		
 		lod.build()
+	
+	
 
 
 func apply_new_data():
-	for lod in get_children():
+	for lod in lods:
 		lod.apply_textures()
+	
+	$RoadNetworkRenderer.center = center
+	$RoadNetworkRenderer.load_data()
+	$RoadNetworkRenderer.apply_data()
 
 
-func set_height_correction_texture(lod_index: int, height_correction_texture) -> void:
-	lods[lod_index].set_height_correction_texture(height_correction_texture)
+func set_height_correction_texture(height_correction_texture) -> void:
+	LOD0.set_height_correction_texture(height_correction_texture)
 
 
 func get_debug_info() -> String:

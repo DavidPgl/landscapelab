@@ -3,13 +3,15 @@ class_name HeightCorrectionTexture
 
 var texture: ImageTexture = ImageTexture.new()
 var size: int = 0
+var resolution: float = 0
 
 var _data: PoolByteArray
 var _image: Image = Image.new()
 
 
-func _init(size: int):
+func _init(size: int, resolution: float):
 	self.size = size
+	self.resolution = resolution
 	_image.create(size, size, false, Image.FORMAT_RF)
 	texture.storage = ImageTexture.STORAGE_RAW
 	texture.create_from_image(_image, Image.FORMAT_RF)
@@ -30,7 +32,7 @@ func update_texture() -> void:
 
 func set_height(x: float, z: float, new_height: float, old_height: float, interpolation_factor: float) -> void:
 	# Outside of texture
-	if x >= size || z >= size || x < 0 || z < 0:
+	if x >= size * resolution || z >= size * resolution || x < 0 || z < 0:
 		return
 	
 	# Wrap 64-bit float into Vector2 to cast it to 32-bit

@@ -214,6 +214,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Python/Python.gd"
 }, {
+"base": "Node",
+"class": "QuadUtil",
+"language": "GDScript",
+"path": "res://Layers/Renderers/RoadNetwork/QuadUtil.gd"
+}, {
 "base": "Layer",
 "class": "RasterLayer",
 "language": "GDScript",
@@ -234,7 +239,7 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Objects/RoadNetwork/RoadInstance.gd"
 }, {
-"base": "LayerRenderer",
+"base": "Node",
 "class": "RoadNetworkRenderer",
 "language": "GDScript",
 "path": "res://Layers/Renderers/RoadNetwork/RoadNetworkRenderer.gd"
@@ -376,6 +381,7 @@ _global_script_class_icons={
 "PositionManager": "",
 "Profile": "",
 "Python": "",
+"QuadUtil": "",
 "RasterLayer": "",
 "RealisticTerrainRenderer": "",
 "RemoveTokenRequestHandler": "",

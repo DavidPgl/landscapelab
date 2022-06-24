@@ -341,6 +341,12 @@ func load_realistic_terrain_layer(db, layer_config, geo_layers_config) -> Layer:
 		db, "SURFACE_HEIGHT_LAYER", geo_layers_config.rasters)
 	terrain_layer.name = layer_config.name
 	
+	# Road Network
+	terrain_layer.render_info.road_layer = get_geofeaturelayer_by_name(db, "road_edges", geo_layers_config.features)
+	terrain_layer.render_info.intersection_layer = get_geofeaturelayer_by_name(db, "road_nodes", geo_layers_config.features)
+	terrain_layer.render_info.road_instance_scene = load(get_extension_by_key(db, "road_instance", layer_config.id))
+	terrain_layer.render_info.intersection_instance_scene = load(get_extension_by_key(db, "intersection_instance", layer_config.id))
+	
 	return terrain_layer
 
 
@@ -481,22 +487,6 @@ func load_path_layer(db, layer_config, geo_layers_config) -> Layer:
 	path_layer.name = layer_config.name
 	
 	return path_layer
-
-
-func load_road_network_layer(db, layer_config, geo_layers_config) -> Layer:
-	var road_network_layer:  = Layer.new()
-	road_network_layer.render_type = Layer.RenderType.ROAD_NETWORK
-	road_network_layer.render_info = Layer.RoadNetworkRenderInfo.new()
-	
-	road_network_layer.render_info.road_layer = get_geofeaturelayer_by_name(db, "road_edges", geo_layers_config.features)
-	road_network_layer.render_info.intersection_layer = get_geofeaturelayer_by_name(db, "road_nodes", geo_layers_config.features)
-	road_network_layer.render_info.ground_height_layer = get_georasterlayer_by_type(db, "HEIGHT_LAYER", geo_layers_config.rasters)
-	road_network_layer.render_info.road_instance_scene = load(get_extension_by_key(db, "road_instance", layer_config.id))
-	road_network_layer.render_info.intersection_instance_scene = load(get_extension_by_key(db, "intersection_instance", layer_config.id))
-	
-	road_network_layer.name = layer_config.name
-	
-	return road_network_layer
 
 
 # Loads a JSON containing paths to Objects in this format:
