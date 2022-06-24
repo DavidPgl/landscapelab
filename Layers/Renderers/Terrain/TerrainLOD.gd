@@ -216,7 +216,8 @@ func apply_textures():
 	visible = true
 
 
-func set_height_correction_texture(height_correction_texture) -> void:
+func set_height_correction_texture(height_correction_texture: HeightCorrectionTexture) -> void:
 	self.height_correction_texture = height_correction_texture
 	material_override.set_shader_param("has_height_correction", true)
-	material_override.set_shader_param("height_correction_texture", height_correction_texture)
+	material_override.set_shader_param("height_correction_texture", height_correction_texture.texture)
+	material_override.set_shader_param("height_correction_weights", height_correction_texture.weights)

@@ -70,7 +70,7 @@ func apply_new_data():
 	$RoadNetworkRenderer.apply_data()
 
 
-func set_height_correction_texture(height_correction_texture) -> void:
+func set_height_correction_texture(height_correction_texture: HeightCorrectionTexture) -> void:
 	LOD0.set_height_correction_texture(height_correction_texture)
 
 

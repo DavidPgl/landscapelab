@@ -20,19 +20,3 @@ static func triangularInterpolation(P, A, B, C) -> Vector3:
 	var W3 = 1 - W1 - W2
 	
 	return Vector3(W1, W2, W3)
-
-
-# Calculates the grid point in x direction with the given grid offset
-static func get_x_grid_point(point: Vector3, step_size: float, offset_count: int) -> Vector3:
-	return Vector3(
-		(floor(point.x / step_size) + offset_count) * step_size,
-		point.y,
-		floor(point.z / step_size) * step_size)
-
-
-# Calculates the grid point in z direction with the given grid offset
-static func get_z_grid_point(point: Vector3, step_size: float, offset_count: int) -> Vector3:
-	return Vector3(
-		floor(point.x / step_size) * step_size,
-		point.y,
-		(floor(point.z / step_size) + offset_count) * step_size)

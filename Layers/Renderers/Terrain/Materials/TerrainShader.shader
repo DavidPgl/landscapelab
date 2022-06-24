@@ -50,6 +50,7 @@ varying float camera_distance;
 
 uniform bool has_height_correction = false;
 uniform sampler2D height_correction_texture;
+uniform sampler2D height_correction_weights;
 
 // Workaround for a bug in `texelFetch` - use this instead!
 // More info at https://github.com/godotengine/godot/issues/31732
@@ -61,13 +62,9 @@ vec4 texelGet ( sampler2D tg_tex, ivec2 tg_coord, int tg_lod ) {
 
 float get_height(vec2 uv) {
 	float height = texture(heightmap, uv).r * height_scale;
-	
-	if (has_height_correction) {
-		float correction = texture(height_correction_texture, uv).r;
-		if (correction != 0.0) {
-			height = correction;
-		}
-	}
+	float correction = texture(height_correction_texture, uv).r;
+	float weight = texture(height_correction_weights, uv).r * float(has_height_correction);
+	height = mix(height, correction, weight);
 	
 	// Clamp to prevent weird behavior with extreme nodata values
 	// TODO: Might have to be generalized further to be more robust

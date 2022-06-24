@@ -6,6 +6,10 @@ onready var road_polygon: CSGPolygon = get_node("RoadPolygon")
 var width: float
 
 
+func _ready():
+	apply_attributes()
+
+
 func apply_attributes() -> void:
 	_set_width(width)
 	_set_height(0.2)
