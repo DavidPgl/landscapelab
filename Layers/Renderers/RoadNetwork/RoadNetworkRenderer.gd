@@ -57,7 +57,7 @@ func load_data():
 	
 	_create_roads(road_features)
 	_create_intersections(intersection_features)
-	#_refine_roads()
+	_refine_roads()
 	
 	height_correction_texture.update_texture()
 	get_parent().set_height_correction_texture(height_correction_texture)
@@ -180,7 +180,7 @@ func _create_intersections(intersection_features) -> void:
 			if point != null:
 				vertices.push_back(Vector2(point.x, point.y))
 			# Safe some attributes for additional point generation
-			road_attributes.append([edge_a_shift, edge_b_shift, smallest_angle])
+			road_attributes.append([edge_a_shift, edge_b_shift, smallest_angle, road_a, road_b])
 			intersection.transform.origin.y = edge_a[1].y
 			
 		# Add additional points to match road angles
@@ -197,14 +197,35 @@ func _create_intersections(intersection_features) -> void:
 			
 			# Only add left point if own angle is smaller
 			if angle < angle_to_left:
-				var left_point: Vector2 = vertex - 2.0 * road_attributes[index][0]
-				vertices.insert(index + added_point_count, left_point)
+				var left_shift = road_attributes[index][0]
+				vertices.insert(index + added_point_count, vertex - left_shift * 2.0)
 				added_point_count += 1
+				
+				# Move road to edge of intersection
+				var road: RoadInstance = road_attributes[index][3]
+				var point_count: int = road.curve.get_point_count()
+				var shifted_point: Vector2 = vertex - left_shift
+				if road.intersection_id == intersection_id:
+					var point = road.curve.get_point_position(0)
+					road.curve.set_point_position(0, Vector3(shifted_point.x, point.y, shifted_point.y))
+				else:
+					var point = road.curve.get_point_position(point_count - 1)
+					road.curve.set_point_position(point_count - 1, Vector3(shifted_point.x, point.y, shifted_point.y))
 			
 			if angle < angle_to_right:
-				var right_point: Vector2 = vertex - 2.0 * road_attributes[index][1]
-				vertices.insert(index + added_point_count + 1, right_point)
+				var right_sift = road_attributes[index][1]
+				vertices.insert(index + added_point_count + 1, vertex - right_sift * 2.0)
 				added_point_count += 1
+				
+				var road: RoadInstance = road_attributes[index][4]
+				var point_count: int = road.curve.get_point_count()
+				var shifted_point: Vector2 = vertex - right_sift
+				if road.intersection_id == intersection_id:
+					var point = road.curve.get_point_position(0)
+					road.curve.set_point_position(0, Vector3(shifted_point.x, point.y, shifted_point.y))
+				else:
+					var point = road.curve.get_point_position(point_count - 1)
+					road.curve.set_point_position(point_count - 1, Vector3(shifted_point.x, point.y, shifted_point.y))
 			
 			index += 1
 		
