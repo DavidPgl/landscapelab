@@ -57,7 +57,7 @@ func load_data():
 	
 	_create_roads(road_features)
 	_create_intersections(intersection_features)
-	_refine_roads()
+	#_refine_roads()
 	
 	height_correction_texture.update_texture()
 	get_parent().set_height_correction_texture(height_correction_texture)
@@ -134,14 +134,13 @@ func _create_intersections(intersection_features) -> void:
 		if edge_ids.size() < 3:
 			continue
 		
-#		if edge_ids[0] == "7110693" && edge_ids[1] == "7098281" && edge_ids[2] == "7098404":
-#			print("Test")
-		
 		var current_edge_id: int = int(edge_ids[0])
 		var next_edge_id: int = current_edge_id
 		for i in range(edge_ids.size()):
+			# Abort if any road is missing
 			if not roads.has(next_edge_id):
 				break
+			
 			var road_a: RoadInstance = roads[next_edge_id]
 			current_edge_id = next_edge_id
 			
@@ -155,18 +154,20 @@ func _create_intersections(intersection_features) -> void:
 			# Find closest angle clockwise
 			for id in edge_ids:
 				var other_edge_id: int = int(id)
+				# Skip itself
 				if other_edge_id == current_edge_id:
 					continue
+				
 				var road: RoadInstance = roads[other_edge_id]
 				var edge = _get_road_point_and_direction(intersection_id, road)
 				var edge_direction = edge[2]
-				# Get the clockwise angle
+				
 				var angle = RoadNetworkUtil.clockwise_angle(edge_a_direction, edge_direction)
 				if angle < smallest_angle:
 					edge_b = edge
 					smallest_angle = angle
 					road_b = road
-					# Use this road as the next road
+					# Use this road as the next road -> Clockwise
 					next_edge_id = other_edge_id
 			
 			# Use left side of road for intersection
@@ -178,7 +179,7 @@ func _create_intersections(intersection_features) -> void:
 			var point = Geometry.line_intersects_line_2d(edge_a[0], edge_a[2], edge_b[0], edge_b[2])
 			if point != null:
 				vertices.push_back(Vector2(point.x, point.y))
-			
+			# Safe some attributes for additional point generation
 			road_attributes.append([edge_a_shift, edge_b_shift, smallest_angle])
 			intersection.transform.origin.y = edge_a[1].y
 			
@@ -190,17 +191,16 @@ func _create_intersections(intersection_features) -> void:
 		var number_of_vertices: int = vertices.size()
 		
 		for vertex in temp:
-			
 			var angle_to_left: float = road_attributes[(index - 1) if index > 0 else number_of_vertices - 1][2]
 			var angle_to_right: float = road_attributes[(index + 1) % number_of_vertices][2]
 			var angle = road_attributes[index][2]
 			
-			# Try to add left point
+			# Only add left point if own angle is smaller
 			if angle < angle_to_left:
 				var left_point: Vector2 = vertex - 2.0 * road_attributes[index][0]
 				vertices.insert(index + added_point_count, left_point)
 				added_point_count += 1
-			# Try to add right point
+			
 			if angle < angle_to_right:
 				var right_point: Vector2 = vertex - 2.0 * road_attributes[index][1]
 				vertices.insert(index + added_point_count + 1, right_point)
