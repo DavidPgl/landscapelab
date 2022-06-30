@@ -1,2 +1,2 @@
-extends Node
-
+extends CSGPolygon
+class_name IntersectionInstance

@@ -20,3 +20,8 @@ static func triangularInterpolation(P, A, B, C) -> Vector3:
 	var W3 = 1 - W1 - W2
 	
 	return Vector3(W1, W2, W3)
+
+
+static func clockwise_angle(a: Vector2, b: Vector2) -> float:
+	var angle = atan2(a.y, a.x) - atan2(b.y, b.x)
+	return angle if angle >= 0 else angle + 2.0 * PI

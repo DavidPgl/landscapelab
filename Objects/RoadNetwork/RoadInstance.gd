@@ -4,6 +4,8 @@ class_name RoadInstance
 onready var road_polygon: CSGPolygon = get_node("RoadPolygon")
 
 var width: float
+# The id of the intersection this road comes from
+var intersection_id: int
 
 
 func _ready():
