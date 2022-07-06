@@ -37,9 +37,6 @@ void fragment() {
 	float offset = outer_line_width + outer_line_offset / 2.0;
 	float lane_width = ((1.0 - 2.0 * offset) - inner_line_width * inner_lines) / (inner_lines + 1.0);
 	
-//	if (inside_line(uv.y, lane_width, lane_width / 2.0 + offset) || inside_line(uv.y, lane_width, 1.0 - lane_width / 2.0 - offset)){
-//		color += vec3(0.0, 0.0, 1.0);
-//	}
 	
 	offset += lane_width / 2.0;
 	if (uv.y > offset && uv.y < 1.0 - offset){
@@ -57,22 +54,7 @@ void fragment() {
 	
 	
 	
-	// Inner line(s)
-//	if (uv.y > offset && uv.y < 1.0 - offset) {
-//
-//		uv.y = map_to_range(uv.y, offset, 1.0 - offset, 0.0, 1.0);
-//		float value = mod(uv.y, 1.0 / lanes);
-//		//if (value >= factor - inner_line_width && value <= inner_line_width){
-//			color = vec3(1.0, 0.0, 0.0);
-//		//}
-//	}
 	
-//	// Inner line(s)
-//	if (uv.y > 0.5 - inner_line_width / 2.0 && uv.y < 0.5 + inner_line_width / 2.0){
-//		if (mod(uv.x, inner_line_frequency) < inner_line_length){
-//			color = vec3(1.0);
-//		}
-//	}
 	
 	
 	ALBEDO = color;

@@ -1,16 +1,7 @@
 extends Node
 class_name RoadNetworkRenderer
 
-##### RoadNetwork data structure #####
-### Roads
-# edge_id			- Road id (equals LINK_ID in GIP)
-# name				- Name of road, NONE if unknown
-# width				- Average width of road
-# speed_forward		- Max speed in road direction
-# speed_backwards	- Max speed in opposite direction
-# lanes_forward		- Number of lanes in road direction
-# lanes_backwards	- Number of lanes in opposite directio
-# direction			- 2 both, 1 edge direction, 0 opposite to edge direction, -1 unknown
+
 
 export(bool) var debug_draw_points: bool = false
 
@@ -40,6 +31,8 @@ var roads: Dictionary = {}
 var debug_points: Array = []
 
 var height_correction_texture: HeightCorrectionTexture = HeightCorrectionTexture.new(300, 1.0)
+
+onready var road_network_ui: RoadNetworkUI = self.get_node("RoadNetworkUI")
 
 
 func load_data():
@@ -84,12 +77,25 @@ func apply_data():
 func _create_roads(road_features) -> void:
 	for road_feature in road_features:
 		var road_id: int = int(road_feature.get_attribute("edge_id"))
+		var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
+		var road_width = float(road_feature.get_attribute("width"))
 		
 		# Create Road instance
 		var road_instance: RoadInstance = road_instance_scene.instance()
-		# Get road information
-		var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
-		var road_width = float(road_feature.get_attribute("width"))
+		# Set road information
+		road_instance.id = road_id
+		road_instance.width = road_width
+		road_instance.road_name = road_feature.get_attribute("name")
+		road_instance.from_intersection = road_feature.get_attribute("from_node")
+		road_instance.to_intersection = road_feature.get_attribute("to_node")
+		road_instance.speed_forward = road_feature.get_attribute("speed_forward")
+		road_instance.speed_backwards = road_feature.get_attribute("speed_backwards")
+		road_instance.lanes_forward = road_feature.get_attribute("lanes_forward")
+		road_instance.lanes_backwards = road_feature.get_attribute("lanes_backwards")
+		road_instance.direction = road_feature.get_attribute("direction")
+		road_instance.type = road_feature.get_attribute("type")
+		road_instance.physical_type = road_feature.get_attribute("physical_type")
+		
 		
 		# TODO: Define this width depending on road type and number of lanes
 		# If the road has no width (usually defined as -1), give it a default width
@@ -211,12 +217,12 @@ func _create_intersections(intersection_features) -> void:
 				else:
 					var point = road.curve.get_point_position(point_count - 1)
 					road.curve.set_point_position(point_count - 1, Vector3(shifted_point.x, point.y, shifted_point.y))
-			
+			# Only add right point if own angle is smaller
 			if angle < angle_to_right:
 				var right_sift = road_attributes[index][1]
 				vertices.insert(index + added_point_count + 1, vertex - right_sift * 2.0)
 				added_point_count += 1
-				
+				# Move road to edge of intersection
 				var road: RoadInstance = road_attributes[index][4]
 				var point_count: int = road.curve.get_point_count()
 				var shifted_point: Vector2 = vertex - right_sift

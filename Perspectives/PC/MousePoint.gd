@@ -11,6 +11,8 @@ onready var camera: Camera = get_parent()
 onready var cursor: RayCast = get_node("InteractRay")
 onready var info := get_node("CursorInfoDialog")
 
+onready var road_network_ui: RoadNetworkUI = get_node("RoadNetworkUI")
+
 var RAY_LENGTH = Settings.get_setting("mouse-point", "camera-ray-length") # Distance that will be checked for collision with the ground
 
 
@@ -27,7 +29,9 @@ func _ready():
 	# it first, rather than having the player handle the clicks (which would happen without this
 	# workaround), thus making it impossible to interact with it
 	remove_child(info)
+	remove_child(road_network_ui)
 	get_tree().get_root().call_deferred("add_child", info)
+	get_tree().get_root().call_deferred("add_child", road_network_ui)
 
 
 func _process(delta):
@@ -44,7 +48,18 @@ func _process(delta):
 # Whenever the mouse moves, align the rotation again
 func _input(event):
 	if event is InputEventMouseButton and event.button_index == BUTTON_MIDDLE and event.pressed:
-		# Fill the info window with values and display it
-		var distance = (cursor.get_collision_point() - camera.global_transform.origin).length()
-		info.set_distance(distance)
-		info.popup_at_mouse_position()
+		var result = cursor.get_collider()
+		# Collision with non-body object
+		if result == null:
+			# Fill the info window with values and display it
+			var distance = (cursor.get_collision_point() - camera.global_transform.origin).length()
+			info.set_distance(distance)
+			info.popup_at_mouse_position()
+		# Collision with body object
+		else:
+			road_network_ui.clear_info()
+			var road: RoadInstance = result.get_parent()
+			var road_info: Dictionary = road.get_info()
+			for info in road_info.keys():
+				road_network_ui.add_info(info, String(road_info[info]))
+			road_network_ui.popup()

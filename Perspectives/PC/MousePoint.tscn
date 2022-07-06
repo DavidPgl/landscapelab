@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://Perspectives/PC/MousePoint.gd" type="Script" id=1]
 [ext_resource path="res://UI/Theme/LandscapeLab.tres" type="Theme" id=2]
 [ext_resource path="res://Perspectives/PC/MouseFeedback/MouseCollisionIndicator.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Perspectives/PC/CursorInfoDialog.gd" type="Script" id=4]
+[ext_resource path="res://Objects/RoadNetwork/RoadNetworkUI.tscn" type="PackedScene" id=5]
 
 [node name="MousePoint" type="Spatial"]
 transform = Transform( 1, 0, 0, 0, 1, 2.98023e-08, 0, -2.98023e-08, 1, 0, 0, 0 )
@@ -37,7 +38,7 @@ __meta__ = {
 
 [node name="DistanceLabel" type="Label" parent="CursorInfoDialog/Distance"]
 margin_top = 4.0
-margin_right = 81.0
+margin_right = 78.0
 margin_bottom = 35.0
 text = "Distance: "
 __meta__ = {
@@ -45,11 +46,14 @@ __meta__ = {
 }
 
 [node name="DistanceValue" type="Label" parent="CursorInfoDialog/Distance"]
-margin_left = 85.0
+margin_left = 82.0
 margin_top = 4.0
-margin_right = 100.0
+margin_right = 97.0
 margin_bottom = 35.0
 text = "?"
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="RoadNetworkUI" parent="." instance=ExtResource( 5 )]
+visible = false
