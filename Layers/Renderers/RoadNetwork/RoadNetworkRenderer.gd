@@ -2,7 +2,6 @@ extends Node
 class_name RoadNetworkRenderer
 
 
-
 export(bool) var debug_draw_points: bool = false
 
 
@@ -77,6 +76,12 @@ func apply_data():
 # Creates the road instances with basic information
 func _create_roads(road_features) -> void:
 	for road_feature in road_features:
+		var road_type: String = road_feature.get_attribute("type")
+		
+		# Skip all rail-roads
+		if road_type.begins_with('E'):
+			continue
+		
 		var road_id: int = int(road_feature.get_attribute("edge_id"))
 		var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
 		var road_width = float(road_feature.get_attribute("width"))
@@ -94,7 +99,7 @@ func _create_roads(road_features) -> void:
 		road_instance.lanes_forward = road_feature.get_attribute("lanes_forward")
 		road_instance.lanes_backwards = road_feature.get_attribute("lanes_backwards")
 		road_instance.direction = road_feature.get_attribute("direction")
-		road_instance.type = road_feature.get_attribute("type")
+		road_instance.type = road_type
 		road_instance.physical_type = road_feature.get_attribute("physical_type")
 		
 		

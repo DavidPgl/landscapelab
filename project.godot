@@ -247,7 +247,7 @@ _global_script_classes=[ {
 "base": "Control",
 "class": "RoadNetworkInfoUI",
 "language": "GDScript",
-"path": "res://Objects/RoadNetwork/RoadNetworkInfoUI.gd"
+"path": "res://Objects/RoadNetwork/RoadUI/RoadNetworkInfoUI.gd"
 }, {
 "base": "Node",
 "class": "RoadNetworkRenderer",
@@ -257,7 +257,7 @@ _global_script_classes=[ {
 "base": "WindowDialog",
 "class": "RoadNetworkUI",
 "language": "GDScript",
-"path": "res://Objects/RoadNetwork/RoadNetworkUI.gd"
+"path": "res://Objects/RoadNetwork/RoadUI/RoadNetworkUI.gd"
 }, {
 "base": "Reference",
 "class": "RoadNetworkUtil",

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://Objects/RoadNetwork/RoadNetworkInfoUI.gd" type="Script" id=1]
+[ext_resource path="res://Objects/RoadNetwork/RoadUI/RoadNetworkInfoUI.gd" type="Script" id=1]
 
 [node name="RoadNetworkInfoUI" type="HSplitContainer"]
 margin_right = 960.0

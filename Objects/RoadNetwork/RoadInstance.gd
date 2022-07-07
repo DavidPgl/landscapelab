@@ -14,6 +14,44 @@ onready var road_polygon: CSGPolygon = get_node("RoadPolygon")
 # lanes_backwards	- Number of lanes in opposite directio
 # direction			- 2 both, 1 edge direction, 0 opposite to edge direction, -1 unknown
 
+const road_type_to_names: Dictionary = {
+	"U":	"Bike and Pedestrian Lane",
+	"RW":	"Bike Lane",
+	"FW":	"Pedestrian",
+	"PS":	"Private Road",
+	"G":	"Municipal Road",
+	"L":	"Country Road"
+}
+
+const road_physical_type_to_names: Dictionary = {
+	-1:		"Unknown",
+	1:		"Autobahn",
+	2:		"Divided Roadway",
+	3:		"Undivided Roadway",
+	4:		"Roundabout",
+	15:		"Footpath",
+	504:	"Bike and Pedestrian Lane",
+	505:	"Bike Lane"
+}
+
+var default_road_material: Material = load("res://Objects/RoadNetwork/DefaultRoad.tres")
+var car_road_material: ShaderMaterial = RoadNetworkUtil.shadermaterial_from_shader(load("res://Objects/RoadNetwork/RoadShader.shader"))
+var road_materials: Dictionary = {
+	# Bike and Pedestrian
+	"U":	default_road_material,
+	# Bike
+	"RW":	default_road_material,
+	# Pedestrian
+	"FW":	default_road_material,
+	# Private road
+	"PS":	default_road_material,
+	# Municipal road
+	"G":	car_road_material,
+	# Country road
+	"L":	car_road_material
+}
+
+
 # Road Information
 var id: int
 var road_name: String
@@ -29,7 +67,7 @@ var direction: int
 var type: String
 # See: https://www.gip.gv.at/assets/downloads/2112_dokumentation_gipat_ogd.pdf#page=13
 # 1 = Autobahn | 2 = Splitted road | 3 = unsplitted road | 4 = Roundabout
-var physical_type: String
+var physical_type: int
 
 
 
@@ -44,6 +82,8 @@ func _ready():
 func apply_attributes() -> void:
 	_set_width(width)
 	_set_height(0.2)
+	if road_materials.has(type):
+		$RoadPolygon.material = road_materials[type]
 
 
 func get_info() -> Dictionary:
@@ -58,9 +98,14 @@ func get_info() -> Dictionary:
 		"Lanes Forward": lanes_forward,
 		"Lanes Backwards": lanes_backwards,
 		"Direction": direction,
-		"Type": type,
-		"Physical Type": direction
+		"Type": road_type_to_names[type] + (" (%s)" % type) \
+		if road_type_to_names.has(type) \
+		else "Unknown Type: " + type,
+		"Physical Type": road_physical_type_to_names[physical_type] + (" (%s)" % physical_type) \
+		if road_physical_type_to_names.has(physical_type) \
+		else "Unknown Physical Type: " + String(physical_type)
 	}
+
 
 
 func _set_width(width: float) -> void:

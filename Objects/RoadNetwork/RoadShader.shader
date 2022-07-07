@@ -50,13 +50,6 @@ void fragment() {
 		}
 	}
 	
-	
-	
-	
-	
-	
-	
-	
 	ALBEDO = color;
 
 }

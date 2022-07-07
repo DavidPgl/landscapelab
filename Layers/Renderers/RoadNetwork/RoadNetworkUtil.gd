@@ -25,3 +25,9 @@ static func triangularInterpolation(P, A, B, C) -> Vector3:
 static func clockwise_angle(a: Vector2, b: Vector2) -> float:
 	var angle = atan2(a.y, a.x) - atan2(b.y, b.x)
 	return angle if angle >= 0 else angle + 2.0 * PI
+
+
+static func shadermaterial_from_shader(shader: Shader) -> ShaderMaterial:
+	var shader_material: ShaderMaterial = ShaderMaterial.new()
+	shader_material.shader = shader
+	return shader_material

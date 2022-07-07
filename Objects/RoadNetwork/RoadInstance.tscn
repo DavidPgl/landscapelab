@@ -9,7 +9,7 @@ _data = {
 "tilts": PoolRealArray( 0, 0, 0 )
 }
 
-[sub_resource type="ShaderMaterial" id=10]
+[sub_resource type="ShaderMaterial" id=2]
 shader = ExtResource( 2 )
 
 [node name="RoadInstance" type="Path"]
@@ -34,4 +34,4 @@ path_local = false
 path_continuous_u = true
 path_u_distance = 1.0
 path_joined = false
-material = SubResource( 10 )
+material = SubResource( 2 )
