@@ -13,6 +13,7 @@ const lod_sample_rates: Array = [
 	1.0,
 	3.0,
 	9.0,
+	27.0,
 	27.0
 ]
 
@@ -390,13 +391,13 @@ func _get_ground_point(vector: Vector3) -> Vector3:
 # Gets the ground height at the given position
 func _get_ground_height(vector: Vector3) -> float:
 	var space_state = get_parent().get_world().direct_space_state
-	var result = space_state.intersect_ray(Vector3(vector.x, 6000, vector.z),Vector3(vector.x, -1000, vector.z))
+	var result = space_state.intersect_ray(Vector3(vector.x, 6000, vector.z),Vector3(vector.x, -1000, vector.z), [], 1048576)
 
 	if not result.empty():
 		return result.position.y
 	else:
 		# If nothing was hit (e.g. border between LODs has a gap) try again with offset
-		result = space_state.intersect_ray(Vector3(vector.x + 0.01, 6000, vector.z + 0.01),Vector3(vector.x + 0.01, -1000, vector.z + 0.01))
+		result = space_state.intersect_ray(Vector3(vector.x + 0.01, 6000, vector.z + 0.01),Vector3(vector.x + 0.01, -1000, vector.z + 0.01), [], 1048576)
 		if not result.empty():
 			return result.position.y
 		else:

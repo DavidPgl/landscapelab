@@ -787,6 +787,7 @@ screenshot={
 3d_render/layer_10="3D VR"
 3d_render/layer_16="3D Terrain Overlay"
 3d_physics/layer_20="MouseCollision"
+3d_physics/layer_21="HeightCollision"
 
 [locale]
 

@@ -139,6 +139,10 @@ func build():
 			if load_fade_textures:
 				current_albedo_fade_textures = Vegetation.get_fade_sheet_texture(group_array, "albedo")
 				current_normal_fade_textures = Vegetation.get_fade_sheet_texture(group_array, "normal")
+	
+	# Reset height correction
+	height_correction_texture = null
+	material_override.set_shader_param("has_height_correction", false)
 
 func apply_textures():
 	rebuild_aabb()
