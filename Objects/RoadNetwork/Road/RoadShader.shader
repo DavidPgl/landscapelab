@@ -9,7 +9,22 @@ const float inner_line_frequency = 40.0;
 
 const float inner_lines = 1.0;
 
-const float number_of_lanes = 1.0;
+uniform int number_of_lanes = 9;
+uniform int lane_type_0 = 4;
+uniform int lane_type_1 = -1;
+uniform int lane_type_2 = 10;
+uniform int lane_type_3 = 10;
+uniform int lane_type_4 = 0;
+uniform int lane_type_5 = 10;
+uniform int lane_type_6 = 10;
+uniform int lane_type_7 = -1;
+uniform int lane_type_8 = 4;
+uniform int lane_type_9 = -1;
+uniform int lane_type_10 = -1;
+uniform int lane_type_11 = -1;
+uniform int lane_type_12 = -1;
+uniform int lane_type_13 = -1;
+uniform int lane_type_14 = -1;
 
 
 float map_to_range(float value, float old_from, float old_to, float new_from, float new_to){
@@ -20,14 +35,7 @@ bool inside_line(float value, float width , float position){
 	return value > position - width / 2.0 && value < position + width / 2.0;
 }
 
-
-void fragment() {
-	// The road surface UVs are only between 0 and 0.125
-	// FORMULA: UV * (4 * (number of faces - 1)) - (number of faces to skip on left)
-	vec2 uv = UV * 4.0 * (number_of_lanes + 1.0) - 0.0;
-	
-	vec3 color = vec3(0.01);
-	
+vec3 road_lane(vec2 uv, vec3 color) {
 	// Left outer line
 	if (inside_line(uv.y, outer_line_width, outer_line_offset)){
 		color = vec3(1.0);
@@ -52,6 +60,71 @@ void fragment() {
 			}
 		}
 	}
+	
+	return color;
+}
+
+vec3 bike_lane(vec2 uv, vec3 color){
+	// Left outer line
+	if (inside_line(uv.y, outer_line_width, outer_line_offset)){
+		color = vec3(1.0);
+	}
+	// Right outer line
+	if (inside_line(uv.y, outer_line_width, 1.0 - outer_line_offset)){
+		color = vec3(1.0);
+	}
+	
+	return color;
+}
+
+
+void fragment() {
+	vec3 color = vec3(0.01);
+	
+	int types[] = 
+	{
+		lane_type_0, lane_type_1, lane_type_2, lane_type_3, lane_type_4, 
+		lane_type_5, lane_type_6, lane_type_7, lane_type_8, lane_type_9,
+		lane_type_10, lane_type_11, lane_type_12, lane_type_13, lane_type_14
+	};
+	
+	for(int i = 0; i < number_of_lanes; i++){
+		vec2 uv = UV * (float(number_of_lanes) * 2.0 + 6.0) - float(i);
+		// Car
+		if(types[i] == 0){
+			color = road_lane(uv, color);
+		}
+		// Bike on Car
+		else if(types[i] == 1){
+			if(uv.y > 0.0 && uv.y < 1.0){
+				color = vec3(0.4, 0.1, 0.1);
+			}
+		}
+		// Parking
+		else if(types[i] == 2){
+			if(uv.y > 0.0 && uv.y < 1.0){
+				color = vec3(0.1, 0.1, 0.4);
+			}
+		}
+		// Pedestrian
+		else if(types[i] == 3){
+			if(uv.y > 0.0 && uv.y < 1.0){
+				color = vec3(0.2);
+			}
+		}
+		// Bike
+		else if(types[i] == 4){
+			color = bike_lane(uv, color);
+		}
+		// Curbside
+		else if(types[i] == 10){
+			if(uv.y > 0.0 && uv.y < 1.0){
+				color = vec3(0.4);
+			}
+		}
+		
+	}
+	
 	
 	ALBEDO = color;
 

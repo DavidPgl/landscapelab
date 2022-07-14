@@ -3,17 +3,7 @@ class_name RoadInstance
 
 onready var road_polygon: CSGPolygon = get_node("RoadPolygon")
 
-##### RoadNetwork data structure #####
-### Roads
-# edge_id			- Road id (equals LINK_ID in GIP)
-# name				- Name of road, NONE if unknown
-# width				- Average width of road
-# speed_forward		- Max speed in road direction
-# speed_backwards	- Max speed in opposite direction
-# lanes_forward		- Number of lanes in road direction
-# lanes_backwards	- Number of lanes in opposite directio
-# direction			- 2 both, 1 edge direction, 0 opposite to edge direction, -1 unknown
-
+# TODO: Convert to internal types in pre-processing
 const road_type_to_names: Dictionary = {
 	"U":	"Bike and Pedestrian Lane",
 	"RW":	"Bike Lane",
@@ -23,6 +13,7 @@ const road_type_to_names: Dictionary = {
 	"L":	"Country Road"
 }
 
+# TODO: Convert to internal types in pre-processing
 const road_physical_type_to_names: Dictionary = {
 	-1:		"Unknown",
 	1:		"Autobahn",
@@ -34,22 +25,25 @@ const road_physical_type_to_names: Dictionary = {
 	505:	"Bike Lane"
 }
 
-var default_road_material: Material = load("res://Objects/RoadNetwork/Road/DefaultRoad.tres")
-var car_road_material: ShaderMaterial = RoadNetworkUtil.shadermaterial_from_shader(load("res://Objects/RoadNetwork/Road/RoadShader.shader"))
-var road_materials: Dictionary = {
-	# Bike and Pedestrian
-	"U":	default_road_material,
-	# Bike
-	"RW":	default_road_material,
-	# Pedestrian
-	"FW":	default_road_material,
-	# Private road
-	"PS":	default_road_material,
-	# Municipal road
-	"G":	car_road_material,
-	# Country road
-	"L":	car_road_material
+
+const road_lane_type_to_name: Dictionary = {
+	0: "Car",
+	1: "Bike on Car",
+	2: "Parking",
+	3: "Pedestrian",
+	4: "Bike",
+	10: "Curbside"
 }
+
+class RoadLane:
+	var type: int
+	var width: float
+	var offset: float
+	var height: float
+
+const road_height = 0.2
+const curbside_width = 0.2
+const curbside_height = 0.1
 
 
 # Road Information
@@ -75,10 +69,6 @@ var lane_uses: String
 # The id of the intersection this road comes from
 var intersection_id: int
 
-class RoadLane:
-	var type: int
-	var width: float
-	var offset: float
 
 var road_lanes: Array = []
 
@@ -101,42 +91,81 @@ func set_polygon_from_lane_uses() -> void:
 		var road_lane: RoadLane = RoadLane.new()
 		road_lane.type = int(lane_infos[0])
 		road_lane.width = float(lane_infos[1])
-		road_lane.offset = float(lane_infos[2])
+		road_lane.offset = float(lane_infos[2]) * direction
 		
 		road_lanes.append(road_lane)
 	
-	
 	road_lanes.sort_custom(self, "custom_compare")
 	
+	var height = road_height
 	var points: PoolVector2Array
 	var number_of_lanes: int = 0
 	var last_lane_end: float = 10000.0
+	var last_lane_type: int = -1
+	# Set upper points, defining road surface
 	for road_lane in road_lanes:
 		var current_lane_begin = road_lane.offset - road_lane.width / 2.0
-		# Add additional points if there is space in-between lanes
+		
+		# Add curbside if going from sidewalk (bike or pedestrian) to road
+		if road_lane.type == 0 or road_lane.type == 1 or road_lane.type == 2:
+			if last_lane_type == 3 or last_lane_type == 4:
+				points.insert(number_of_lanes, Vector2(current_lane_begin - curbside_width, height))
+				# Flag this lane as curbside in shader
+				$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, 10)
+				number_of_lanes += 1
+				
+				points.insert(number_of_lanes, Vector2(current_lane_begin, height))
+				$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, 10)
+				number_of_lanes += 1
+				
+				# Correct road height as we are now lower due to curbside
+				height -= curbside_height
+		
+		# Add additional point if there is space in-between lanes
 		if last_lane_end < current_lane_begin:
 			points.insert(number_of_lanes, Vector2(last_lane_end, 0.2))
-			points.insert(points.size() - number_of_lanes, Vector2(last_lane_end, 0.0))
+			number_of_lanes += 1
 		
-		# Set point as upper and lower vertex
-		var point = Vector2(current_lane_begin, 0.2)
-		points.insert(number_of_lanes, point)
-		points.insert(points.size() - number_of_lanes, Vector2(point.x, 0.0))
+		# Add curbside if going from road to sidewalk (bike or pedestrian) 
+		if road_lane.type == 3 or road_lane.type == 4:
+			if last_lane_type == 0 or last_lane_type == 1 or last_lane_type == 2:
+				# Correct road height as we are now lower due to curbside
+				height += curbside_height
+				
+				points.insert(number_of_lanes, Vector2(last_lane_end, height))
+				$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, 10)
+				number_of_lanes += 1
+				
+				points.insert(number_of_lanes, Vector2(last_lane_end + curbside_width, height))
+				$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, 10)
+				number_of_lanes += 1
+		
+		# Add current lane point
+		points.insert(number_of_lanes, Vector2(current_lane_begin, 0.2))
+		$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, road_lane.type)
 		last_lane_end = road_lane.offset + road_lane.width / 2.0
+		last_lane_type = road_lane.type
 		
 		number_of_lanes += 1
 	
 	var road_lane: RoadLane = road_lanes[road_lanes.size() - 1]
 	var lane_end = road_lane.offset + road_lane.width / 2.0
-	points.insert(number_of_lanes, Vector2(lane_end, 0.2))
-	points.insert(points.size() - number_of_lanes, Vector2(lane_end, 0.0))
-	number_of_lanes += 1
+	# Insert end points
+	points.append(Vector2(lane_end, height))
+	points.append(Vector2(lane_end, 0.0))
+	
+	# Insert point below first point as last point
+	points.append(Vector2(points[0].x, 0.0))
 	
 	width = points[points.size() - number_of_lanes].x - points[0].x
 	left_width = abs(points[0].x)
 	right_width = abs(points[points.size() - number_of_lanes].x)
 	
 	$RoadPolygon.polygon = points
+	
+	# Set number of lanes in Shader
+	$RoadPolygon.material.set_shader_param("number_of_lanes", number_of_lanes)
+	
 
 
 func custom_compare(a, b):

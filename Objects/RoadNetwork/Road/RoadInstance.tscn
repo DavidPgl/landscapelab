@@ -10,7 +10,24 @@ _data = {
 }
 
 [sub_resource type="ShaderMaterial" id=2]
+resource_local_to_scene = true
 shader = ExtResource( 2 )
+shader_param/number_of_lanes = 9
+shader_param/lane_type_0 = 4
+shader_param/lane_type_1 = -1
+shader_param/lane_type_2 = 10
+shader_param/lane_type_3 = 10
+shader_param/lane_type_4 = 0
+shader_param/lane_type_5 = 10
+shader_param/lane_type_6 = 10
+shader_param/lane_type_7 = -1
+shader_param/lane_type_8 = 4
+shader_param/lane_type_9 = -1
+shader_param/lane_type_10 = -1
+shader_param/lane_type_11 = -1
+shader_param/lane_type_12 = -1
+shader_param/lane_type_13 = -1
+shader_param/lane_type_14 = -1
 
 [node name="RoadInstance" type="Path"]
 curve = SubResource( 1 )
@@ -23,7 +40,7 @@ generate_lightmap = false
 use_collision = true
 collision_layer = 524288
 collision_mask = 524288
-polygon = PoolVector2Array( 0, 0.2, 1, 0.2, 1, 0, 0, 0 )
+polygon = PoolVector2Array( -5, 0.2, -3, 0.2, -1.2, 0.2, -1, 0.2, -1, 0.1, 1, 0.1, 1, 0.2, 1.2, 0.2, 3, 0.2, 5, 0.2, 5, 0, -5, 0 )
 mode = 2
 path_node = NodePath("..")
 path_interval_type = 0

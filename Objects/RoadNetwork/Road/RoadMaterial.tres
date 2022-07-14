@@ -1,0 +1,22 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=2]
+
+[ext_resource path="res://Objects/RoadNetwork/Road/RoadShader.shader" type="Shader" id=1]
+
+[resource]
+shader = ExtResource( 1 )
+shader_param/number_of_lanes = 9
+shader_param/lane_type_0 = 4
+shader_param/lane_type_1 = -1
+shader_param/lane_type_2 = 10
+shader_param/lane_type_3 = 10
+shader_param/lane_type_4 = 0
+shader_param/lane_type_5 = 10
+shader_param/lane_type_6 = 10
+shader_param/lane_type_7 = -1
+shader_param/lane_type_8 = 4
+shader_param/lane_type_9 = -1
+shader_param/lane_type_10 = -1
+shader_param/lane_type_11 = -1
+shader_param/lane_type_12 = -1
+shader_param/lane_type_13 = -1
+shader_param/lane_type_14 = -1
