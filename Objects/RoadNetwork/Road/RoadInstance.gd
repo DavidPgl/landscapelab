@@ -34,8 +34,8 @@ const road_physical_type_to_names: Dictionary = {
 	505:	"Bike Lane"
 }
 
-var default_road_material: Material = load("res://Objects/RoadNetwork/DefaultRoad.tres")
-var car_road_material: ShaderMaterial = RoadNetworkUtil.shadermaterial_from_shader(load("res://Objects/RoadNetwork/RoadShader.shader"))
+var default_road_material: Material = load("res://Objects/RoadNetwork/Road/DefaultRoad.tres")
+var car_road_material: ShaderMaterial = RoadNetworkUtil.shadermaterial_from_shader(load("res://Objects/RoadNetwork/Road/RoadShader.shader"))
 var road_materials: Dictionary = {
 	# Bike and Pedestrian
 	"U":	default_road_material,
@@ -58,6 +58,8 @@ var road_name: String
 var from_intersection: int
 var to_intersection: int
 var width: float
+var left_width: float
+var right_width: float
 var speed_forward: float
 var speed_backwards: float
 var lanes_forward: int
@@ -68,22 +70,77 @@ var type: String
 # See: https://www.gip.gv.at/assets/downloads/2112_dokumentation_gipat_ogd.pdf#page=13
 # 1 = Autobahn | 2 = Splitted road | 3 = unsplitted road | 4 = Roundabout
 var physical_type: int
-
-
+var lane_uses: String
 
 # The id of the intersection this road comes from
 var intersection_id: int
 
+class RoadLane:
+	var type: int
+	var width: float
+	var offset: float
+
+var road_lanes: Array = []
+
 
 func _ready():
-	apply_attributes()
+	_apply_attributes()
 
 
-func apply_attributes() -> void:
-	_set_width(width)
-	_set_height(0.2)
-	if road_materials.has(type):
-		$RoadPolygon.material = road_materials[type]
+func set_polygon_from_lane_uses() -> void:
+	# Default road if no lanes are defined
+	if lane_uses == null:
+		road_polygon.polygon[0].x = -width / 2.0
+		road_polygon.polygon[1].x = width / 2.0
+		road_polygon.polygon[2].x = width / 2.0
+		road_polygon.polygon[3].x = -width / 2.0
+	
+	var lanes: PoolStringArray = lane_uses.split(';', false)
+	for lane in lanes:
+		var lane_infos: PoolStringArray = lane.split(',', false)
+		var road_lane: RoadLane = RoadLane.new()
+		road_lane.type = int(lane_infos[0])
+		road_lane.width = float(lane_infos[1])
+		road_lane.offset = float(lane_infos[2])
+		
+		road_lanes.append(road_lane)
+	
+	
+	road_lanes.sort_custom(self, "custom_compare")
+	
+	var points: PoolVector2Array
+	var number_of_lanes: int = 0
+	var last_lane_end: float = 10000.0
+	for road_lane in road_lanes:
+		var current_lane_begin = road_lane.offset - road_lane.width / 2.0
+		# Add additional points if there is space in-between lanes
+		if last_lane_end < current_lane_begin:
+			points.insert(number_of_lanes, Vector2(last_lane_end, 0.2))
+			points.insert(points.size() - number_of_lanes, Vector2(last_lane_end, 0.0))
+		
+		# Set point as upper and lower vertex
+		var point = Vector2(current_lane_begin, 0.2)
+		points.insert(number_of_lanes, point)
+		points.insert(points.size() - number_of_lanes, Vector2(point.x, 0.0))
+		last_lane_end = road_lane.offset + road_lane.width / 2.0
+		
+		number_of_lanes += 1
+	
+	var road_lane: RoadLane = road_lanes[road_lanes.size() - 1]
+	var lane_end = road_lane.offset + road_lane.width / 2.0
+	points.insert(number_of_lanes, Vector2(lane_end, 0.2))
+	points.insert(points.size() - number_of_lanes, Vector2(lane_end, 0.0))
+	number_of_lanes += 1
+	
+	width = points[points.size() - number_of_lanes].x - points[0].x
+	left_width = abs(points[0].x)
+	right_width = abs(points[points.size() - number_of_lanes].x)
+	
+	$RoadPolygon.polygon = points
+
+
+func custom_compare(a, b):
+	return a.offset < b.offset
 
 
 func get_info() -> Dictionary:
@@ -107,16 +164,5 @@ func get_info() -> Dictionary:
 	}
 
 
-
-func _set_width(width: float) -> void:
-	road_polygon.polygon[0].x = -width / 2.0
-	road_polygon.polygon[1].x = width / 2.0
-	road_polygon.polygon[2].x = width / 2.0
-	road_polygon.polygon[3].x = -width / 2.0
-
-func _set_height(height: float) -> void:
-	road_polygon.polygon[2].y = height / 2.0
-	road_polygon.polygon[3].y = height / 2.0
-
-
-
+func _apply_attributes() -> void:
+	pass

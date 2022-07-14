@@ -101,6 +101,7 @@ func _create_roads(road_features) -> void:
 		road_instance.direction = road_feature.get_attribute("direction")
 		road_instance.type = road_type
 		road_instance.physical_type = road_feature.get_attribute("physical_type")
+		road_instance.lane_uses = road_feature.get_attribute("linear_uses")
 		
 		
 		# TODO: Define this width depending on road type and number of lanes
@@ -128,6 +129,7 @@ func _create_roads(road_features) -> void:
 		road_instance.curve = road_curve
 		road_instance.width = road_width
 		road_instance.intersection_id = int(road_feature.get_attribute("from_node"))
+		road_instance.set_polygon_from_lane_uses()
 		roads_parent.add_child(road_instance)
 		
 		roads[road_id] = road_instance
@@ -183,10 +185,10 @@ func _create_intersections(intersection_features) -> void:
 					next_edge_id = other_edge_id
 			
 			# Use left side of road for intersection
-			var edge_a_shift = Vector2(-edge_a[2].y, edge_a[2].x).normalized() * (road_a.width / 2.0)
+			var edge_a_shift = Vector2(-edge_a[2].y, edge_a[2].x).normalized() * (road_a.left_width)
 			edge_a[0] += edge_a_shift
 			# Use right side
-			var edge_b_shift = Vector2(edge_b[2].y, -edge_b[2].x).normalized() * (road_b.width / 2.0)
+			var edge_b_shift = Vector2(edge_b[2].y, -edge_b[2].x).normalized() * (road_b.right_width)
 			edge_b[0] += edge_b_shift
 			var point = Geometry.line_intersects_line_2d(edge_a[0], edge_a[2], edge_b[0], edge_b[2])
 			if point != null:
@@ -242,7 +244,7 @@ func _create_intersections(intersection_features) -> void:
 			index += 1
 		
 		# Create mesh from points
-		intersection.polygon = vertices
+		intersection.set_points(vertices)
 		intersection_parent.add_child(intersection)
 
 # Returns the last edge as a starting point (VECTOR2), end point (VECTOR3) and direction (VECTOR2)
@@ -380,7 +382,6 @@ func _refine_roads() -> void:
 		
 		
 		road_instance.curve = road_curve
-		road_instance.width = road_width
 
 
 func _add_point_to_curve(curve: Curve3D, point: Vector3, point_index: int, width: float):

@@ -139,10 +139,10 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Layers/Renderers/RoadNetwork/HeightCorrectionTexture.gd"
 }, {
-"base": "CSGPolygon",
+"base": "Spatial",
 "class": "IntersectionInstance",
 "language": "GDScript",
-"path": "res://Objects/RoadNetwork/IntersectionInstance.gd"
+"path": "res://Objects/RoadNetwork/Intersection/IntersectionInstance.gd"
 }, {
 "base": "Resource",
 "class": "Layer",
@@ -242,7 +242,7 @@ _global_script_classes=[ {
 "base": "Path",
 "class": "RoadInstance",
 "language": "GDScript",
-"path": "res://Objects/RoadNetwork/RoadInstance.gd"
+"path": "res://Objects/RoadNetwork/Road/RoadInstance.gd"
 }, {
 "base": "Control",
 "class": "RoadNetworkInfoUI",

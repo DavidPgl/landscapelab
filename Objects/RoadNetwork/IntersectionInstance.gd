@@ -1,2 +1,0 @@
-extends CSGPolygon
-class_name IntersectionInstance

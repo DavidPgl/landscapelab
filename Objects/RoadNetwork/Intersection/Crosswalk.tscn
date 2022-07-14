@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Objects/RoadNetwork/Intersection/CrosswalkShader.shader" type="Shader" id=1]
+
+[sub_resource type="ShaderMaterial" id=2]
+shader = ExtResource( 1 )
+
+[node name="Crosswalk" type="Spatial"]
+
+[node name="CSGBox" type="CSGBox" parent="."]
+width = 1.0
+height = 0.1
+material = SubResource( 2 )

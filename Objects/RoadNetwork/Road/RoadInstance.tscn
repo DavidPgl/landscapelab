@@ -1,11 +1,11 @@
 [gd_scene load_steps=5 format=2]
 
-[ext_resource path="res://Objects/RoadNetwork/RoadInstance.gd" type="Script" id=1]
-[ext_resource path="res://Objects/RoadNetwork/RoadShader.shader" type="Shader" id=2]
+[ext_resource path="res://Objects/RoadNetwork/Road/RoadInstance.gd" type="Script" id=1]
+[ext_resource path="res://Objects/RoadNetwork/Road/RoadShader.shader" type="Shader" id=2]
 
 [sub_resource type="Curve3D" id=1]
 _data = {
-"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.272682, -0.023309, 1.21285, 0, 0, 0, 0, 0, 0, 0.52314, -0.0915217, 15.323, 0, 0, 0, 0, 0, 0, 7.60367, -0.114882, 42.6546 ),
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.0223793, 0.0773783, -0.55933, 0, 0, 0, 0, 0, 0, -0.811381, -0.116249, -15.9199, 0, 0, 0, 0, 0, 0, 5.30831, -0.174156, -32.4663 ),
 "tilts": PoolRealArray( 0, 0, 0 )
 }
 
@@ -23,7 +23,7 @@ generate_lightmap = false
 use_collision = true
 collision_layer = 524288
 collision_mask = 524288
-polygon = PoolVector2Array( -2, 0, 2, 0, 2, 0.1, -2, 0.1 )
+polygon = PoolVector2Array( 0, 0.2, 1, 0.2, 1, 0, 0, 0 )
 mode = 2
 path_node = NodePath("..")
 path_interval_type = 0

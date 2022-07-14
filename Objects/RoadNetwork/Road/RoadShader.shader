@@ -9,6 +9,8 @@ const float inner_line_frequency = 40.0;
 
 const float inner_lines = 1.0;
 
+const float number_of_lanes = 1.0;
+
 
 float map_to_range(float value, float old_from, float old_to, float new_from, float new_to){
 	return new_from + ((new_to - new_from) / (old_to - old_from)) * (value - old_from);
@@ -21,7 +23,8 @@ bool inside_line(float value, float width , float position){
 
 void fragment() {
 	// The road surface UVs are only between 0 and 0.125
-	vec2 uv = UV / 0.125;
+	// FORMULA: UV * (4 * (number of faces - 1)) - (number of faces to skip on left)
+	vec2 uv = UV * 4.0 * (number_of_lanes + 1.0) - 0.0;
 	
 	vec3 color = vec3(0.01);
 	
