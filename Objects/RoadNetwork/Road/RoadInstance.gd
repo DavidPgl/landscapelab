@@ -35,7 +35,7 @@ const road_lane_type_to_name: Dictionary = {
 	10: "Curbside"
 }
 
-class RoadLane:
+class RoadLane extends Reference:
 	var type: int
 	var width: float
 	var offset: float
@@ -79,11 +79,12 @@ func _ready():
 
 func set_polygon_from_lane_uses() -> void:
 	# Default road if no lanes are defined
-	if lane_uses == null:
-		road_polygon.polygon[0].x = -width / 2.0
-		road_polygon.polygon[1].x = width / 2.0
-		road_polygon.polygon[2].x = width / 2.0
-		road_polygon.polygon[3].x = -width / 2.0
+	if lane_uses == null or lane_uses.empty():
+		$RoadPolygon.polygon[0].x = -width / 2.0
+		$RoadPolygon.polygon[1].x = width / 2.0
+		$RoadPolygon.polygon[2].x = width / 2.0
+		$RoadPolygon.polygon[3].x = -width / 2.0
+		return
 	
 	var lanes: PoolStringArray = lane_uses.split(';', false)
 	for lane in lanes:
@@ -91,7 +92,7 @@ func set_polygon_from_lane_uses() -> void:
 		var road_lane: RoadLane = RoadLane.new()
 		road_lane.type = int(lane_infos[0])
 		road_lane.width = float(lane_infos[1])
-		road_lane.offset = float(lane_infos[2]) * direction
+		road_lane.offset = float(lane_infos[2]) * -1
 		
 		road_lanes.append(road_lane)
 	
@@ -157,9 +158,9 @@ func set_polygon_from_lane_uses() -> void:
 	# Insert point below first point as last point
 	points.append(Vector2(points[0].x, 0.0))
 	
-	width = points[points.size() - number_of_lanes].x - points[0].x
 	left_width = abs(points[0].x)
-	right_width = abs(points[points.size() - number_of_lanes].x)
+	right_width = abs(points[points.size() - 3].x)
+	width = left_width + right_width
 	
 	$RoadPolygon.polygon = points
 	

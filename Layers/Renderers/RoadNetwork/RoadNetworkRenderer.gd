@@ -1,7 +1,6 @@
 extends Node
 class_name RoadNetworkRenderer
 
-
 export(bool) var debug_draw_points: bool = false
 
 
@@ -15,6 +14,16 @@ const lod_sample_rates: Array = [
 	27.0,
 	27.0
 ]
+
+# Left and right being viewed as from 6 o'clock, meaning:
+# Left: Clockwise | Right: Counter-Clockwise
+class IntersectionPointInfo extends Reference:
+	var distance_to_center: float
+	var shift_direction_left: Vector2
+	var shift_direction_right: Vector2
+	var road_left: RoadInstance
+	var road_right: RoadInstance
+	var angle: float
 
 var road_layer
 var intersection_layer
@@ -57,12 +66,12 @@ func load_data():
 
 
 func apply_data():
-	if debug_draw_points:
-		for child in $Debug.get_children():
-			child.queue_free()
-		for point in debug_points:
-			$Debug.add_child(point)
-		debug_points.clear()
+	#if debug_draw_points:
+	for child in $Debug.get_children():
+		child.queue_free()
+	for point in debug_points:
+		$Debug.add_child(point)
+	debug_points.clear()
 	
 	# Remove old objects
 	$Roads.free()
@@ -142,30 +151,44 @@ func _create_intersections(intersection_features) -> void:
 		var road_attributes: Array = []
 		
 		var intersection_id: int = int(intersection_feature.get_attribute("node_id"))
-		
 		var edge_ids: PoolStringArray = intersection_feature.get_attribute("edges").split(';')
 		
 		if edge_ids.size() < 3:
 			continue
 		
+		var unknown_road: bool = false
+		for road_id in edge_ids:
+			if not roads.has(int(road_id)):
+				unknown_road = true
+				break
+		
+		if unknown_road:
+			continue
+		
+		if edge_ids[0] == "7151114" && edge_ids[1] == "7151115":
+			print("Test")
+		
+		var intersection_height: float = _get_road_point_3D(roads[int(edge_ids[0])], intersection_id).y
+		
+		# Calculate outer road intersections, defining intersection footprint
 		var current_edge_id: int = int(edge_ids[0])
 		var next_edge_id: int = current_edge_id
 		for i in range(edge_ids.size()):
-			# Abort if any road is missing
-			if not roads.has(next_edge_id):
-				break
 			
 			var road_a: RoadInstance = roads[next_edge_id]
 			current_edge_id = next_edge_id
 			
-			var edge_a = _get_road_point_and_direction(intersection_id, road_a)
-			var edge_a_point = edge_a[0]
-			var edge_a_direction = edge_a[2]
+			# Get last and second-last point
+			var edge_a_A: Vector2 = _get_road_point(road_a, intersection_id)
+			var edge_a_B: Vector2 = _get_road_point(road_a, intersection_id, 1)
+			var edge_a_direction: Vector2 = edge_a_B - edge_a_A
 			
-			var edge_b
+			var edge_b_A: Vector2
+			var edge_b_B: Vector2
+			var edge_b_direction: Vector2
 			var smallest_angle: float = 2 * PI
 			var road_b: RoadInstance
-			# Find closest angle clockwise
+			# Find next road clockwise using smallest angle
 			for id in edge_ids:
 				var other_edge_id: int = int(id)
 				# Skip itself
@@ -173,30 +196,64 @@ func _create_intersections(intersection_features) -> void:
 					continue
 				
 				var road: RoadInstance = roads[other_edge_id]
-				var edge = _get_road_point_and_direction(intersection_id, road)
-				var edge_direction = edge[2]
+				var edge_A = _get_road_point(road, intersection_id)
+				var edge_B = _get_road_point(road, intersection_id, 1)
+				var edge_direction = edge_B - edge_A
 				
 				var angle = RoadNetworkUtil.clockwise_angle(edge_a_direction, edge_direction)
 				if angle < smallest_angle:
-					edge_b = edge
+					edge_b_A = edge_A
+					edge_b_B = edge_B
+					edge_b_direction = edge_B - edge_A
 					smallest_angle = angle
 					road_b = road
 					# Use this road as the next road -> Clockwise
 					next_edge_id = other_edge_id
 			
 			# Use left side of road for intersection
-			var edge_a_shift = Vector2(-edge_a[2].y, edge_a[2].x).normalized() * (road_a.left_width)
-			edge_a[0] += edge_a_shift
+			var edge_a_shift = Vector2(edge_a_direction.y, -edge_a_direction.x).normalized() * (road_a.left_width)
 			# Use right side
-			var edge_b_shift = Vector2(edge_b[2].y, -edge_b[2].x).normalized() * (road_b.right_width)
-			edge_b[0] += edge_b_shift
-			var point = Geometry.line_intersects_line_2d(edge_a[0], edge_a[2], edge_b[0], edge_b[2])
-			if point != null:
-				vertices.push_back(Vector2(point.x, point.y))
-			# Safe some attributes for additional point generation
-			road_attributes.append([edge_a_shift, edge_b_shift, smallest_angle, road_a, road_b])
-			intersection.transform.origin.y = edge_a[1].y
+			var edge_b_shift = Vector2(-edge_b_direction.y, edge_b_direction.x).normalized() * (road_b.right_width)
 			
+			var point: Vector2
+			# Almost straight edge-case
+			if smallest_angle >= 3.0:
+				point = edge_a_A + edge_a_shift if edge_a_shift >= edge_b_shift else edge_b_A + edge_b_shift
+			else:
+				edge_a_A += edge_a_shift
+				edge_b_A += edge_b_shift
+				point = Geometry.line_intersects_line_2d(edge_a_A, edge_a_direction, edge_b_A, edge_b_direction)
+			
+			vertices.push_back(Vector2(point.x, point.y))
+			
+			# Safe some attributes for additional point generation
+			var info: IntersectionPointInfo = IntersectionPointInfo.new()
+			info.road_left = road_b
+			info.road_right = road_a
+			# Use opposite direction as we need to find the point on the other side of the road
+			info.shift_direction_left = Vector2(edge_b_direction.y, -edge_b_direction.x).normalized()
+			info.shift_direction_right = Vector2(-edge_a_direction.y, edge_a_direction.x).normalized()
+			info.angle = smallest_angle
+			
+			road_attributes.append(info)
+			
+			intersection.transform.origin.y = _get_road_point_3D(road_a, intersection_id).y
+		
+		# Calculate intersection center
+		var intersection_center: Vector2 = Vector2(0,0)
+		for vertex in vertices:
+			intersection_center += vertex
+		
+		intersection_center /= vertices.size()
+		
+		var debug_point: MeshInstance = $Debug_Point.duplicate()
+		debug_point.transform.origin = Vector3(intersection_center.x, intersection_height + 1, intersection_center.y)
+		debug_points.append(debug_point)
+		
+		# Safe distance to intersection center for later
+		for index in range(vertices.size()):
+			road_attributes[index].distance_to_center = vertices[index].distance_squared_to(intersection_center)
+		
 		# Add additional points to match road angles
 		var temp: PoolVector2Array = PoolVector2Array()
 		temp.append_array(vertices)
@@ -205,41 +262,50 @@ func _create_intersections(intersection_features) -> void:
 		var number_of_vertices: int = vertices.size()
 		
 		for vertex in temp:
-			var angle_to_left: float = road_attributes[(index - 1) if index > 0 else number_of_vertices - 1][2]
-			var angle_to_right: float = road_attributes[(index + 1) % number_of_vertices][2]
-			var angle = road_attributes[index][2]
+			var info: IntersectionPointInfo = road_attributes[index]
+			var info_left: IntersectionPointInfo = road_attributes[(index + 1) % number_of_vertices]
+			var info_right: IntersectionPointInfo = road_attributes[(index - 1) if index > 0 else number_of_vertices - 1]
+			var distance_to_center = info.distance_to_center
+			var distance_to_center_left = info_left.distance_to_center
+			var distance_to_center_right = info_right.distance_to_center
 			
-			# Only add left point if own angle is smaller
-			if angle < angle_to_left:
-				var left_shift = road_attributes[index][0]
-				vertices.insert(index + added_point_count, vertex - left_shift * 2.0)
+			# Only add point if its further away than the corner point
+			var shifted_right: Vector2 = vertex + info.shift_direction_right * info.road_right.width
+			if shifted_right.distance_squared_to(intersection_center) > distance_to_center_right:
+				vertices.insert(index + added_point_count, shifted_right)
 				added_point_count += 1
+
+				var road: RoadInstance = info.road_right
+				var shifted_point: Vector2 = vertex + info.shift_direction_right * info.road_right.left_width
 				
 				# Move road to edge of intersection
-				var road: RoadInstance = road_attributes[index][3]
-				var point_count: int = road.curve.get_point_count()
-				var shifted_point: Vector2 = vertex - left_shift
-				if road.intersection_id == intersection_id:
-					var point = road.curve.get_point_position(0)
-					road.curve.set_point_position(0, Vector3(shifted_point.x, point.y, shifted_point.y))
-				else:
-					var point = road.curve.get_point_position(point_count - 1)
-					road.curve.set_point_position(point_count - 1, Vector3(shifted_point.x, point.y, shifted_point.y))
-			# Only add right point if own angle is smaller
-			if angle < angle_to_right:
-				var right_sift = road_attributes[index][1]
-				vertices.insert(index + added_point_count + 1, vertex - right_sift * 2.0)
+				var point: Vector2 = _get_road_point(road, intersection_id)
+				var prev_point: Vector2 = _get_road_point(road, intersection_id, 1)
+				# Remove points until moved road fits
+				while point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point):
+					_remove_road_point(road, intersection_id, 1)
+					prev_point = _get_road_point(road, intersection_id, 1)
+				
+				_set_road_point(road, Vector3(shifted_point.x, intersection_height, shifted_point.y), intersection_id) 
+			
+			var shifted_left: Vector2 = vertex + info.shift_direction_left * info.road_left.width
+			# Only add point if its further away than the corner point
+			if shifted_left.distance_squared_to(intersection_center) > distance_to_center_left:
+				vertices.insert(index + added_point_count + 1, shifted_left)
 				added_point_count += 1
+
+				var road: RoadInstance = info.road_left
+				var shifted_point: Vector2 = vertex + info.shift_direction_left * info.road_left.right_width
+
 				# Move road to edge of intersection
-				var road: RoadInstance = road_attributes[index][4]
-				var point_count: int = road.curve.get_point_count()
-				var shifted_point: Vector2 = vertex - right_sift
-				if road.intersection_id == intersection_id:
-					var point = road.curve.get_point_position(0)
-					road.curve.set_point_position(0, Vector3(shifted_point.x, point.y, shifted_point.y))
-				else:
-					var point = road.curve.get_point_position(point_count - 1)
-					road.curve.set_point_position(point_count - 1, Vector3(shifted_point.x, point.y, shifted_point.y))
+				var point: Vector2 = _get_road_point(road, intersection_id)
+				var prev_point: Vector2 = _get_road_point(road, intersection_id, 1)
+				# Remove points until moved road fits
+				while point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point):
+					_remove_road_point(road, intersection_id, 1)
+					prev_point = _get_road_point(road, intersection_id, 1)
+				
+				_set_road_point(road, Vector3(shifted_point.x, intersection_height, shifted_point.y), intersection_id) 
 			
 			index += 1
 		
@@ -247,20 +313,32 @@ func _create_intersections(intersection_features) -> void:
 		intersection.set_points(vertices)
 		intersection_parent.add_child(intersection)
 
-# Returns the last edge as a starting point (VECTOR2), end point (VECTOR3) and direction (VECTOR2)
-func _get_road_point_and_direction(intersection_id: int, road: RoadInstance) -> Array:
-	var point_a: Vector3
-	var point_b: Vector3
-	# Either use first two points or last two points
+
+func _get_road_point(road: RoadInstance, intersection_id: int, offset: int = 0) -> Vector2:
+	var point = _get_road_point_3D(road, intersection_id, offset)
+	return Vector2(point.x, point.z)
+
+
+func _remove_road_point(road: RoadInstance, intersection_id: int, offset: int = 0) -> void:
 	if road.intersection_id == intersection_id:
-		point_a = road.curve.get_point_position(1)
-		point_b = road.curve.get_point_position(0)
+		road.curve.remove_point(offset)
 	else:
-		var point_count: int = road.curve.get_point_count()
-		point_a = road.curve.get_point_position(point_count - 2)
-		point_b = road.curve.get_point_position(point_count - 1)
-	
-	return [Vector2(point_a.x, point_a.z), point_b, Vector2(point_b.x - point_a.x, point_b.z - point_a.z)]
+		road.curve.remove_point(road.curve.get_point_count() - 1 - offset)
+
+
+func _set_road_point(road: RoadInstance, point: Vector3, intersection_id: int, offset: int = 0) -> void:
+	if road.intersection_id == intersection_id:
+		road.curve.set_point_position(offset, point)
+	else:
+		road.curve.set_point_position(road.curve.get_point_count() - 1 - offset, point)
+
+
+func _get_road_point_3D(road: RoadInstance, intersection_id: int, offset: int = 0) -> Vector3:
+	# Either use front or back
+	if road.intersection_id == intersection_id:
+		return road.curve.get_point_position(offset)
+	else:
+		return road.curve.get_point_position(road.curve.get_point_count() - 1 - offset)
 
 
 # Adds additional curve points depending on the underlying terrain and sets their height
