@@ -79,10 +79,20 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Vegetation/DensityClass.gd"
 }, {
+"base": "MeshInstance",
+"class": "ExtraLOD",
+"language": "GDScript",
+"path": "res://Layers/Renderers/Terrain/ExtraLOD.gd"
+}, {
 "base": "Layer",
 "class": "FeatureLayer",
 "language": "GDScript",
 "path": "res://Layers/FeatureLayer.gd"
+}, {
+"base": "Object",
+"class": "GameEvent",
+"language": "GDScript",
+"path": "res://GameSystem/GameEvents/GameEvent.gd"
 }, {
 "base": "Object",
 "class": "GameMode",
@@ -319,6 +329,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Communication/Table/TokenPositionRequestHandler.gd"
 }, {
+"base": "GameMode",
+"class": "TurnBasedGameMode",
+"language": "GDScript",
+"path": "res://GameSystem/TurnBasedGameMode.gd"
+}, {
 "base": "Control",
 "class": "VRGuiElement",
 "language": "GDScript",
@@ -369,7 +384,9 @@ _global_script_class_icons={
 "CreateFeatureRequestHandler": "",
 "CreationCondition": "",
 "DensityClass": "",
+"ExtraLOD": "",
 "FeatureLayer": "",
+"GameEvent": "",
 "GameMode": "",
 "GameObject": "",
 "GameObjectCollection": "",
@@ -417,6 +434,7 @@ _global_script_class_icons={
 "TableHandshakeRequestHandler": "",
 "TimeManager": "",
 "TokenPositionRequestHandler": "",
+"TurnBasedGameMode": "",
 "VRGuiElement": "",
 "VRInteractable": "",
 "VRStaticInteractable": "",
@@ -436,8 +454,8 @@ config/icon="res://Resources/Icons/Meta/icon.png"
 
 [autoload]
 
-Startup="*res://Global/Startup.gd"
 logger="*res://Global/Debug/logger.gd"
+Startup="*res://Global/Startup.gd"
 ErrorPrompt="*res://Global/Debug/ErrorPrompt.gd"
 Settings="*res://Config/Settings.gd"
 CommunicationServer="*res://Communication/CommunicationServer.gd"
@@ -449,6 +467,7 @@ Layers="*res://Layers/Singletons/Layers.gd"
 Scenarios="*res://Scenarios/Singletons/Scenarios.gd"
 TreeHandler="*res://Global/TreeHandler.gd"
 VegetationImages="*res://Vegetation/VegetationImages.gd"
+Licenses="*res://Util/Licenses.gd"
 Vegetation="*res://Vegetation/Vegetation.gd"
 Screencapture="*res://Global/Screencapture.gd"
 GameSystem="*res://GameSystem/GameSystem.gd"

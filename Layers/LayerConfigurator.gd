@@ -87,6 +87,17 @@ func load_gpkg(geopackage_path: String):
 #	player_game_object_collection.desired_color = "GREEN_BRICK"
 #
 #	GameSystem.current_game_mode = game_mode
+#
+#	var map_raster = RasterLayer.new()
+#	map_raster.geo_raster_layer = Layers.geo_layers["rasters"]["ortho"]
+#
+#	var map_layer = Layer.new()
+#	map_layer.render_type = Layer.RenderType.TWODIMENSIONAL
+#	map_layer.render_info = Layer.TwoDimensionalInfo.new()
+#	map_layer.render_info.texture_layer = map_raster
+#	map_layer.name = "Minimap Ortho"
+#
+#	Layers.add_layer(map_layer)
 
 
 func validate_gpkg(geopackage_path: String):
@@ -172,6 +183,15 @@ func digest_gpkg(geopackage_path: String):
 			layer.set_visible_quiet(layer_config.is_visible)
 			Layers.add_layer(layer)
 	
+#	var raster = RasterLayer.new()
+#	raster.geo_raster_layer = Layers.geo_layers["rasters"]["basemap"].clone()
+#	var test = Layer.new()
+#	test.render_type = Layer.RenderType.TWODIMENSIONAL
+#	test.render_info = Layer.TwoDimensionalInfo.new()
+#	test.render_info.texture_layer = raster
+#	test.name = "map"
+#	Layers.add_layer(test)
+	
 	# Loading Scenarios
 	logger.info("Starting to load scenarios ...", LOG_MODULE)
 	var scenario_configs: Array = db.select_rows("LL_scenarios", "", ["*"]).duplicate()
@@ -202,6 +222,8 @@ func digest_gpkg(geopackage_path: String):
 			
 			var layer_name = entry[0].name
 			scenario.add_visible_layer_name(layer_name)
+			#FIXME: Hotfix
+			scenario.add_visible_layer_name("map")
 		
 		Scenarios.add_scenario(scenario)
 	
@@ -416,6 +438,7 @@ func load_object_layer(db, layer_config, geo_layers_config, extended_as: Layer.O
 	object_layer.render_info.object = object_scene
 	object_layer.render_info.ground_height_layer = get_georasterlayer_by_type(
 		db, "HEIGHT_LAYER", geo_layers_config.rasters)
+	# FIXME: should come from geopackage -> no hardcoding
 	object_layer.ui_info.name_attribute = "Beschreib"
 	object_layer.name = layer_config.name
 	
