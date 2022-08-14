@@ -91,15 +91,17 @@ func _create_roads(road_features) -> void:
 		if road_type.begins_with('E'):
 			continue
 		
-		var road_id: int = int(road_feature.get_attribute("edge_id"))
-		var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
-		var road_width = float(road_feature.get_attribute("width"))
 		
 		# Create Road instance
 		var road_instance: RoadInstance = road_instance_scene.instance()
-		# Set road information
+		
+		# Get road information
+		var road_curve: Curve3D = road_feature.get_offset_curve3d(-center[0], 0, -center[1])
+		var road_id: int = int(road_feature.get_attribute("edge_id"))
 		road_instance.id = road_id
+		var road_width = float(road_feature.get_attribute("width"))
 		road_instance.width = road_width
+		road_instance.length = float(road_feature.get_attribute("length"))
 		road_instance.road_name = road_feature.get_attribute("name")
 		road_instance.from_intersection = road_feature.get_attribute("from_node")
 		road_instance.to_intersection = road_feature.get_attribute("to_node")

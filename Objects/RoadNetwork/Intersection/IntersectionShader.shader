@@ -20,8 +20,7 @@ bool inside_line(float value, float width , float position){
 
 
 void fragment() {
-	vec3 color = vec3(0.01);
-	
+	vec3 color = vec3(40.0 / 255.0);
 	ALBEDO = color;
 
 }

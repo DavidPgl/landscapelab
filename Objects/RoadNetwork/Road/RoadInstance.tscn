@@ -7,7 +7,7 @@
 
 [sub_resource type="Curve3D" id=1]
 _data = {
-"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.0223793, 0.0773783, -0.55933, 0, 0, 0, 0, 0, 0, -0.811381, -0.116249, -15.9199, 0, 0, 0, 0, 0, 0, 4.82819, -0.17426, -31.1872 ),
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.0223793, 0.0773783, -0.55933, 0, 0, 0, 0, 0, 0, -0.811381, -0.116249, -15.9199, 0, 0, 0, 0, 0, 0, 5.1053, 1.03045, -33.2652 ),
 "tilts": PoolRealArray( 0, 0, 0 )
 }
 
@@ -40,6 +40,7 @@ shader_param/lane_width_8 = 3.0
 shader_param/lane_width_9 = 3.0
 shader_param/lane_width_10 = 3.0
 shader_param/lane_width_11 = 3.0
+shader_param/road_length = 800.0
 shader_param/bike_icon = ExtResource( 3 )
 shader_param/pedestrian_icon = ExtResource( 4 )
 

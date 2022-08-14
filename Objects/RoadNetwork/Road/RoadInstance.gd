@@ -52,6 +52,7 @@ var road_name: String
 var from_intersection: int
 var to_intersection: int
 var width: float
+var length: float
 var left_width: float
 var right_width: float
 var speed_forward: float
@@ -167,6 +168,7 @@ func set_polygon_from_lane_uses() -> void:
 	
 	# Set number of lanes in Shader
 	$RoadPolygon.material.set_shader_param("number_of_lanes", number_of_lanes)
+	$RoadPolygon.material.set_shader_param("road_length", length)
 	
 
 
@@ -189,6 +191,7 @@ func get_info() -> Dictionary:
 		"From Intersection": from_intersection,
 		"To Intersection": to_intersection,
 		"Width": width,
+		"Length": length,
 		"Speed Forward": speed_forward,
 		"Speed Backwards": speed_backwards,
 		"Lanes Forward": lanes_forward,

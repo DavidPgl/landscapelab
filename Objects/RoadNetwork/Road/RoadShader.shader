@@ -40,6 +40,8 @@ uniform float lane_width_9 = 3.0;
 uniform float lane_width_10 = 3.0;
 uniform float lane_width_11 = 3.0;
 
+uniform float road_length = 800.0;
+
 
 float map_to_range(float value, float old_from, float old_to, float new_from, float new_to){
 	return new_from + ((new_to - new_from) / (old_to - old_from)) * (value - old_from);
@@ -79,12 +81,14 @@ vec3 road_lane(vec2 uv, vec3 color) {
 }
 
 vec3 bike_lane(vec2 uv, float width, vec3 color){
-	if (uv.y > 0.4 && uv.y < 0.8){
-		float x = mod(uv.x, icon_frequency);
-		if (x <= (width * 10.0)){
-			x = -x / (width * 10.0);
-			float y = map_to_range(uv.y, 0.4, 0.8, 0, 1);
-			return texture(bike_icon, vec2(y, x)).rgb;
+	if (uv.x < road_length * 8.0 && road_length >= 10.0){
+		if (uv.y > 0.4 && uv.y < 0.8){
+			float x = mod(uv.x, icon_frequency);
+			if (x <= (width * 10.0)){
+				x = -x / (width * 10.0);
+				float y = map_to_range(uv.y, 0.4, 0.8, 0, 1);
+				return texture(bike_icon, vec2(y, x)).rgb;
+			}
 		}
 	}
 	
@@ -101,12 +105,14 @@ vec3 bike_lane(vec2 uv, float width, vec3 color){
 }
 
 vec3 pedestrian_lane(vec2 uv, float width, vec3 color){
-	if (uv.y > 0.4 && uv.y < 0.8){
-		float x = mod(uv.x, icon_frequency);
-		if (mod(uv.x, icon_frequency) <= (width * 10.0)){
-			x = -x / (width * 10.0);
-			float y = map_to_range(uv.y, 0.4, 0.8, 0, 1);
-			color = texture(pedestrian_icon, vec2(y, x)).rgb;
+	if (uv.x < road_length * 8.0 && road_length >= 10.0){
+		if (uv.y > 0.4 && uv.y < 0.8){
+			float x = mod(uv.x, icon_frequency);
+			if (x <= (width * 10.0)){
+				x = -x / (width * 10.0);
+				float y = map_to_range(uv.y, 0.4, 0.8, 0, 1);
+				color = texture(pedestrian_icon, vec2(y, x)).rgb;
+			}
 		}
 	}
 	return color;
@@ -114,7 +120,7 @@ vec3 pedestrian_lane(vec2 uv, float width, vec3 color){
 
 
 void fragment() {
-	vec3 color = vec3(0.01);
+	vec3 color = vec3(40.0 / 255.0);
 	
 	int types[] = 
 	{
