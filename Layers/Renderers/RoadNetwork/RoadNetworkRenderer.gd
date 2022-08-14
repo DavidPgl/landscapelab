@@ -286,7 +286,7 @@ func _create_intersections(intersection_features) -> void:
 				var direction2D = Vector2(info.shift_direction_right.y, -info.shift_direction_right.x)
 				var direction: Vector3 = Vector3(direction2D.x, 0, direction2D.y)
 				# Remove points until moved road fits
-				while point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point):
+				while road.curve.get_point_count() > 2 && point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point) + 1.0:
 					_remove_road_point(road, intersection_id, 1)
 					prev_point = _get_road_point(road, intersection_id, 1)
 				
@@ -307,7 +307,7 @@ func _create_intersections(intersection_features) -> void:
 				var direction2D = Vector2(-info.shift_direction_left.y, info.shift_direction_left.x)
 				var direction: Vector3 = Vector3(direction2D.x, 0, direction2D.y)
 				# Remove points until moved road fits
-				while point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point):
+				while road.curve.get_point_count() > 2 && point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point) + 1.0:
 					_remove_road_point(road, intersection_id, 1)
 					prev_point = _get_road_point(road, intersection_id, 1)
 				
@@ -338,16 +338,14 @@ func _set_road_point(road: RoadInstance, point: Vector3, intersection_id: int, d
 		#road.curve.add_point(point, Vector3.ZERO, Vector3.ZERO, 0)
 		road.curve.set_point_position(0, point)
 		# Add helper point to keep road direction
-		road.curve.add_point(point + direction.normalized() * 0.4, Vector3.ZERO, Vector3.ZERO, 1)
-		road.curve.add_point(point + direction.normalized() * 0.2, Vector3.ZERO, Vector3.ZERO, 1)
+		road.curve.add_point(point + direction.normalized() * 1.0, Vector3.ZERO, Vector3.ZERO, 1)
 		
 	else:
 		#road.curve.remove_point(road.curve.get_point_count() - 1)
 		#road.curve.add_point(point, Vector3.ZERO, Vector3.ZERO, road.curve.get_point_count())
 		road.curve.set_point_position(road.curve.get_point_count() - 1, point)
 		# Add helper point to keep road direction
-		road.curve.add_point(point + direction.normalized() * 0.4, Vector3.ZERO, Vector3.ZERO, road.curve.get_point_count() - 1)
-		road.curve.add_point(point + direction.normalized() * 0.2, Vector3.ZERO, Vector3.ZERO, road.curve.get_point_count() - 1)
+		road.curve.add_point(point + direction.normalized() * 1.0, Vector3.ZERO, Vector3.ZERO, road.curve.get_point_count() - 1)
 
 
 func _get_road_point_3D(road: RoadInstance, intersection_id: int, offset: int = 0) -> Vector3:

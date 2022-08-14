@@ -51,6 +51,7 @@ mesh = SubResource( 1 )
 material/0 = SubResource( 11 )
 
 [node name="Debug" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0 )
 
 [node name="Roads" type="Spatial" parent="."]
 
