@@ -173,6 +173,14 @@ func custom_compare(a, b):
 	return a.offset < b.offset
 
 
+func get_left_width(intersection_id) -> float:
+	return left_width if intersection_id == from_intersection else right_width
+
+
+func get_right_width(intersection_id) -> float:
+	return right_width if intersection_id == from_intersection else left_width
+
+
 func get_info() -> Dictionary:
 	return {
 		"ID": id,
