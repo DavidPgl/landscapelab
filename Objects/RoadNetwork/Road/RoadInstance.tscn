@@ -1,20 +1,23 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://Objects/RoadNetwork/Road/RoadInstance.gd" type="Script" id=1]
 [ext_resource path="res://Objects/RoadNetwork/Road/RoadShader.shader" type="Shader" id=2]
+[ext_resource path="res://Objects/RoadNetwork/bike_icon.png" type="Texture" id=3]
+[ext_resource path="res://Objects/RoadNetwork/pedestrian_icon.png" type="Texture" id=4]
 
 [sub_resource type="Curve3D" id=1]
 _data = {
-"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.0223793, 0.0773783, -0.55933, 0, 0, 0, 0, 0, 0, -0.811381, -0.116249, -15.9199, 0, 0, 0, 0, 0, 0, 5.30831, -0.174156, -32.4663 ),
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, -0.0223793, 0.0773783, -0.55933, 0, 0, 0, 0, 0, 0, -0.811381, -0.116249, -15.9199, 0, 0, 0, 0, 0, 0, 4.82819, -0.17426, -31.1872 ),
 "tilts": PoolRealArray( 0, 0, 0 )
 }
 
 [sub_resource type="ShaderMaterial" id=2]
 resource_local_to_scene = true
 shader = ExtResource( 2 )
+shader_param/icon_frequency = 100.0
 shader_param/number_of_lanes = 9
 shader_param/lane_type_0 = 4
-shader_param/lane_type_1 = -1
+shader_param/lane_type_1 = 3
 shader_param/lane_type_2 = 10
 shader_param/lane_type_3 = 10
 shader_param/lane_type_4 = 0
@@ -25,9 +28,20 @@ shader_param/lane_type_8 = 4
 shader_param/lane_type_9 = -1
 shader_param/lane_type_10 = -1
 shader_param/lane_type_11 = -1
-shader_param/lane_type_12 = -1
-shader_param/lane_type_13 = -1
-shader_param/lane_type_14 = -1
+shader_param/lane_width_0 = 2.0
+shader_param/lane_width_1 = 1.8
+shader_param/lane_width_2 = 3.0
+shader_param/lane_width_3 = 3.0
+shader_param/lane_width_4 = 3.0
+shader_param/lane_width_5 = 3.0
+shader_param/lane_width_6 = 3.0
+shader_param/lane_width_7 = 3.0
+shader_param/lane_width_8 = 3.0
+shader_param/lane_width_9 = 3.0
+shader_param/lane_width_10 = 3.0
+shader_param/lane_width_11 = 3.0
+shader_param/bike_icon = ExtResource( 3 )
+shader_param/pedestrian_icon = ExtResource( 4 )
 
 [node name="RoadInstance" type="Path"]
 curve = SubResource( 1 )

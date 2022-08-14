@@ -144,6 +144,7 @@ func set_polygon_from_lane_uses() -> void:
 		# Add current lane point
 		points.insert(number_of_lanes, Vector2(current_lane_begin, 0.2))
 		$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, road_lane.type)
+		$RoadPolygon.material.set_shader_param("lane_width_%d" % number_of_lanes, road_lane.width / 2.0)
 		last_lane_end = road_lane.offset + road_lane.width / 2.0
 		last_lane_type = road_lane.type
 		
