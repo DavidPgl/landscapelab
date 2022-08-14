@@ -36,10 +36,10 @@ const road_lane_type_to_name: Dictionary = {
 }
 
 class RoadLane extends Reference:
-	var type: int
-	var width: float
-	var offset: float
-	var height: float
+	var type: int = -1
+	var width: float = -1.0
+	var offset: float = -1.0
+	var height: float = -1.0
 
 const road_height = 0.2
 const curbside_width = 0.2
@@ -74,6 +74,9 @@ var intersection_id: int
 var road_lanes: Array = []
 
 
+var bike_on_road: int = 0
+
+
 func _ready():
 	_apply_attributes()
 
@@ -88,6 +91,9 @@ func set_polygon_from_lane_uses() -> void:
 		return
 	
 	var lanes: PoolStringArray = lane_uses.split(';', false)
+	var bike_on_car_offset: float = 0
+	var left_bike_on_road = false
+	var right_bike_on_road = false
 	for lane in lanes:
 		var lane_infos: PoolStringArray = lane.split(',', false)
 		var road_lane: RoadLane = RoadLane.new()
@@ -95,22 +101,36 @@ func set_polygon_from_lane_uses() -> void:
 		road_lane.width = float(lane_infos[1])
 		road_lane.offset = float(lane_infos[2]) * -1
 		
+		if road_lane.type == 1:
+			bike_on_car_offset += road_lane.width
+			if road_lane.offset < 0:
+				left_bike_on_road = true
+			else:
+				right_bike_on_road = true
+		
 		road_lanes.append(road_lane)
 	
+	for road_lane in road_lanes:
+		if road_lane.type == 0:
+			road_lane.width -= bike_on_car_offset
+			break
+	
 	road_lanes.sort_custom(self, "custom_compare")
+	
+	
 	
 	var height = road_height
 	var points: PoolVector2Array
 	var number_of_lanes: int = 0
 	var last_lane_end: float = 10000.0
-	var last_lane_type: int = -1
+	var last_lane: RoadLane = RoadLane.new()
 	# Set upper points, defining road surface
 	for road_lane in road_lanes:
 		var current_lane_begin = road_lane.offset - road_lane.width / 2.0
 		
 		# Add curbside if going from sidewalk (bike or pedestrian) to road
 		if road_lane.type == 0 or road_lane.type == 1 or road_lane.type == 2:
-			if last_lane_type == 3 or last_lane_type == 4:
+			if last_lane.type == 3 or last_lane.type == 4:
 				points.insert(number_of_lanes, Vector2(current_lane_begin - curbside_width, height))
 				# Flag this lane as curbside in shader
 				$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, 10)
@@ -130,7 +150,7 @@ func set_polygon_from_lane_uses() -> void:
 		
 		# Add curbside if going from road to sidewalk (bike or pedestrian) 
 		if road_lane.type == 3 or road_lane.type == 4:
-			if last_lane_type == 0 or last_lane_type == 1 or last_lane_type == 2:
+			if last_lane.type == 0 or last_lane.type == 1 or last_lane.type == 2:
 				# Correct road height as we are now lower due to curbside
 				height += curbside_height
 				
@@ -142,12 +162,17 @@ func set_polygon_from_lane_uses() -> void:
 				$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, 10)
 				number_of_lanes += 1
 		
+		
 		# Add current lane point
 		points.insert(number_of_lanes, Vector2(current_lane_begin, 0.2))
 		$RoadPolygon.material.set_shader_param("lane_type_%d" % number_of_lanes, road_lane.type)
 		$RoadPolygon.material.set_shader_param("lane_width_%d" % number_of_lanes, road_lane.width / 2.0)
 		last_lane_end = road_lane.offset + road_lane.width / 2.0
-		last_lane_type = road_lane.type
+		
+		last_lane = road_lane
+		
+		if road_lane.type == 1:
+			bike_on_road += 1
 		
 		number_of_lanes += 1
 	
@@ -169,6 +194,9 @@ func set_polygon_from_lane_uses() -> void:
 	# Set number of lanes in Shader
 	$RoadPolygon.material.set_shader_param("number_of_lanes", number_of_lanes)
 	$RoadPolygon.material.set_shader_param("road_length", length)
+	
+	$RoadPolygon.material.set_shader_param("left_bike_on_road", left_bike_on_road)
+	$RoadPolygon.material.set_shader_param("right_bike_on_road", right_bike_on_road)
 	
 
 
@@ -202,7 +230,8 @@ func get_info() -> Dictionary:
 		else "Unknown Type: " + type,
 		"Physical Type": road_physical_type_to_names[physical_type] + (" (%s)" % physical_type) \
 		if road_physical_type_to_names.has(physical_type) \
-		else "Unknown Physical Type: " + String(physical_type)
+		else "Unknown Physical Type: " + String(physical_type),
+		"Bike on road": String(bike_on_road)
 	}
 
 
