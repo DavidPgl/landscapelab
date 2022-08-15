@@ -59,7 +59,7 @@ func load_data():
 	
 	_create_roads(road_features)
 	_create_intersections(intersection_features)
-	#_refine_roads()
+	_refine_roads()
 	
 	height_correction_texture.update_texture()
 	get_parent().set_height_correction_texture(height_correction_texture)
@@ -271,47 +271,54 @@ func _create_intersections(intersection_features) -> void:
 			var distance_to_center_left = info_left.distance_to_center
 			var distance_to_center_right = info_right.distance_to_center
 			
-			# Only add point if its further away than the corner point
-			var shifted_right: Vector2 = vertex + info.shift_direction_right * info.road_right.width
-			if shifted_right.distance_squared_to(intersection_center) > distance_to_center_right:
-				vertices.insert(index + added_point_count, shifted_right)
-				added_point_count += 1
-
-				var road: RoadInstance = info.road_right
-				var shifted_point: Vector2 = vertex + info.shift_direction_right * road.get_left_width(intersection_id)
-				
-				# Move road to edge of intersection
-				var point: Vector2 = _get_road_point(road, intersection_id)
-				var prev_point: Vector2 = _get_road_point(road, intersection_id, 1)
-				var direction2D = Vector2(info.shift_direction_right.y, -info.shift_direction_right.x)
-				var direction: Vector3 = Vector3(direction2D.x, 0, direction2D.y)
-				# Remove points until moved road fits
-				while road.curve.get_point_count() > 2 && point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point) + 1.0:
-					_remove_road_point(road, intersection_id, 1)
-					prev_point = _get_road_point(road, intersection_id, 1)
-				
-				_set_road_point(road, Vector3(shifted_point.x, intersection_height, shifted_point.y), intersection_id, direction) 
+			var left_type = info.road_left.physical_type
+			var right_type = info.road_right.physical_type
+			var right_bike_or_pedest = right_type == 15 or right_type == 504 or right_type == 505
+			var left_bike_or_pedest = left_type == 15 or left_type == 504 or left_type == 505
 			
-			var shifted_left: Vector2 = vertex + info.shift_direction_left * info.road_left.width
-			# Only add point if its further away than the corner point
-			if shifted_left.distance_squared_to(intersection_center) > distance_to_center_left:
-				vertices.insert(index + added_point_count + 1, shifted_left)
-				added_point_count += 1
+			if right_bike_or_pedest or (not left_bike_or_pedest and not right_bike_or_pedest):
+				# Only add point if its further away than the corner point
+				var shifted_right: Vector2 = vertex + info.shift_direction_right * info.road_right.width
+				if shifted_right.distance_squared_to(intersection_center) > distance_to_center_right:
+					vertices.insert(index + added_point_count, shifted_right)
+					added_point_count += 1
 
-				var road: RoadInstance = info.road_left
-				var shifted_point: Vector2 = vertex + info.shift_direction_left * road.get_right_width(intersection_id)
+					var road: RoadInstance = info.road_right
+					var shifted_point: Vector2 = vertex + info.shift_direction_right * road.get_left_width(intersection_id)
+					
+					# Move road to edge of intersection
+					var point: Vector2 = _get_road_point(road, intersection_id)
+					var prev_point: Vector2 = _get_road_point(road, intersection_id, 1)
+					var direction2D = Vector2(info.shift_direction_right.y, -info.shift_direction_right.x)
+					var direction: Vector3 = Vector3(direction2D.x, 0, direction2D.y)
+					# Remove points until moved road fits
+					while road.curve.get_point_count() > 2 && point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point) + 1.0:
+						_remove_road_point(road, intersection_id, 1)
+						prev_point = _get_road_point(road, intersection_id, 1)
+					
+					_set_road_point(road, Vector3(shifted_point.x, intersection_height, shifted_point.y), intersection_id, direction) 
+			
+			if left_bike_or_pedest or (not left_bike_or_pedest and not right_bike_or_pedest):
+				var shifted_left: Vector2 = vertex + info.shift_direction_left * info.road_left.width
+				# Only add point if its further away than the corner point
+				if shifted_left.distance_squared_to(intersection_center) > distance_to_center_left:
+					vertices.insert(index + added_point_count + 1, shifted_left)
+					added_point_count += 1
 
-				# Move road to edge of intersection
-				var point: Vector2 = _get_road_point(road, intersection_id)
-				var prev_point: Vector2 = _get_road_point(road, intersection_id, 1)
-				var direction2D = Vector2(-info.shift_direction_left.y, info.shift_direction_left.x)
-				var direction: Vector3 = Vector3(direction2D.x, 0, direction2D.y)
-				# Remove points until moved road fits
-				while road.curve.get_point_count() > 2 && point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point) + 1.0:
-					_remove_road_point(road, intersection_id, 1)
-					prev_point = _get_road_point(road, intersection_id, 1)
-				
-				_set_road_point(road, Vector3(shifted_point.x, intersection_height, shifted_point.y), intersection_id, direction) 
+					var road: RoadInstance = info.road_left
+					var shifted_point: Vector2 = vertex + info.shift_direction_left * road.get_right_width(intersection_id)
+
+					# Move road to edge of intersection
+					var point: Vector2 = _get_road_point(road, intersection_id)
+					var prev_point: Vector2 = _get_road_point(road, intersection_id, 1)
+					var direction2D = Vector2(-info.shift_direction_left.y, info.shift_direction_left.x)
+					var direction: Vector3 = Vector3(direction2D.x, 0, direction2D.y)
+					# Remove points until moved road fits
+					while road.curve.get_point_count() > 2 && point.distance_squared_to(prev_point) < point.distance_squared_to(shifted_point) + 1.0:
+						_remove_road_point(road, intersection_id, 1)
+						prev_point = _get_road_point(road, intersection_id, 1)
+					
+					_set_road_point(road, Vector3(shifted_point.x, intersection_height, shifted_point.y), intersection_id, direction) 
 			
 			index += 1
 		
