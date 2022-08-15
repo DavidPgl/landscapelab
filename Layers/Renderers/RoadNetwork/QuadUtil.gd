@@ -60,6 +60,10 @@ static func get_diagonal_intersection(from: Vector3, to: Vector3, step_size: flo
 	
 	# Calculate intersection values
 	var den: float = (from.x - to.x) * (C.z - A.z) - (from.z - to.z) * (C.x - A.x)
+	
+	if den == 0:
+		return null
+	
 	var t: float = ((from.x - C.x) * (C.z - A.z) - (from.z - C.z) * (C.x - A.x)) / den
 	var u: float = -(((from.x - to.x) * (from.z - C.z) - (from.z - to.z) * (from.x - C.x)) / den)
 	
